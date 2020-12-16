@@ -1,0 +1,11 @@
+.DS_Store
+.ipynb_checkpoints/*
+.vscode/*
+LinXGBoost/*
+OsiDefaultName_bounds
+Untitled.ipynb
+Untitled1.ipynb
+__pycache__/*
+extrapolation_test.ipynb
+research*
+src/__pycache__/*

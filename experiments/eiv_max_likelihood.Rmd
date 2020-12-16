@@ -1,0 +1,180 @@
+---
+title: "eiv_max_likelihood"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Define the problem.
+
+
+```{r definition}
+library("mvtnorm")
+library("tidyverse")
+
+
+a = 2
+constant = 2
+x = runif(100,0,10)
+xi = x + rnorm(100,0,1)
+plot(x, xi)
+# Define a cubic function
+y = a*x^2 + rnorm(100,0,10) + constant
+plot(xi, y)
+
+```
+
+```{r}
+# Plot the results of the regression without considering the EIV
+lm(y~I(xi^2))
+```
+```{r}
+# Define the solver functions
+all_likelihoods = function(xi, y, x_theta, y_theta, alpha=alpha, c=c){
+  
+  shifts = NULL
+  sum_l = 0
+  for (i in 1:length(xi)){
+    #print(i)
+    point_l = point_likelihood(xi[i], y[i], x_theta, y_theta, alpha=alpha, c=c)
+    #print(point_l)
+    sum_l = sum_l + point_l$likelihood
+    shifts = append(shifts, point_l$shift_z)
+  }
+  # Return the total shift likelihood across all points
+  return(sum_l)
+}
+
+
+all_likelihoods_optim = function(params, xi, y){
+
+  print(params)
+  x_theta = params[1]
+  y_theta=params[2]
+  alpha=params[3]
+  c=params[4]
+  
+  shifts = NULL
+  sum_l = 0
+  for (i in 1:length(xi)){
+    #print(i)
+    point_l = point_likelihood(xi[i], y[i], x_theta, y_theta, alpha=alpha, c=c)
+    #print(point_l)
+    sum_l = sum_l + point_l$likelihood
+    shifts = append(shifts, point_l$shift_z)
+  }
+  
+  print(sum_l)
+  # Return the total shift likelihood across all points
+  return(sum_l)
+}
+
+
+
+point_likelihood = function(xi0, yi, x_theta, y_theta, alpha=2, c=0){
+  
+  z_optim = optim(0, 
+        fn=single_likelihood, 
+        x_theta = x_theta,
+        y_theta=y_theta, 
+        yi=yi, 
+        xi = xi0,
+        alpha=alpha,
+        c=c, 
+        method="Brent",
+        lower=-6*x_theta,
+        upper=6*x_theta,
+        type="mv")
+  
+  shift_z = z_optim$par
+  max_l = z_optim$value
+
+  return(list("shift_z"=(shift_z), "likelihood"=max_l))
+}
+
+single_likelihood = function(params, x_theta, y_theta, xi0, yi, alpha, c, type="individual"){
+  
+    z = params[1]
+    xl = dnorm(z, 0, sd=x_theta, log=TRUE)
+    y_p = alpha*(z + xi0)^2 + c
+    res = yi - y_p
+    yl = dnorm(res, 0, y_theta, log=TRUE)
+    #print(paste0("XL: ",xl, " , YL: ", yl, ", Shift: ",z, ", Res: ",res))
+    
+    if (type == "individual"){
+      return (-(yl + xl))
+    } else {
+      # Calculate the likelihood from a Multivariate Gaussian
+      # Assume independence of the parameters
+      covariance_mat = matrix(c(x_theta, 0, 0, y_theta), nrow=2, ncol=2)
+      means = c(0,0)
+      m_l = dmvnorm(c(z, res), means, covariance_mat, log = TRUE)
+      return(-m_l)
+    }
+}
+```
+
+# Monte Carlo Simulation with Plots
+```{r monte_carlo}
+oy = c(1:100)/10
+ox = c(1:100)/10
+a = 1 + 1:20/10
+c = c(1:100)/10
+
+monte_carlo = as.data.frame(expand.grid(a, c, oy, ox))
+monte_carlo$likelihood = NA
+colnames(monte_carlo) = c("alpha","c","oy","ox","likelihood")
+#monte_carlo$r = monte_carlo$ox/monte_carlo$oy
+
+# Take a subset
+
+
+monte_carlo = monte_carlo[sample(1:nrow(monte_carlo), 10000),]
+
+for (i in 1:nrow(monte_carlo)){
+  print(i)
+  # Assume independent 
+  l = all_likelihoods(xi, y, x_theta=monte_carlo[i,'ox'], y_theta=monte_carlo[i,'oy'], alpha=monte_carlo[i,'alpha'], c=monte_carlo[i,'c'])
+  monte_carlo[i,'likelihood'] = l
+}
+```
+```{r}
+# Optimised version
+
+model_fit = optim(c(1,1,1,1), fn=all_likelihoods_optim, xi=xi, y=y, method="L-BFGS")
+
+```
+
+```{r}
+model_fit$par
+```
+
+
+
+```{r outcome}
+monte_carlo = monte_carlo[order(monte_carlo$likelihood),]
+
+plot(monte_carlo$ox, monte_carlo$likelihood, ylim=c(0,50))
+```
+
+
+```{r}
+head(monte_carlo, 50)
+plot(monte_carlo$ox, monte_carlo$likelihood, ylim=c(120, 1000))
+```
+
+
+
+```{r}
+xt= (1:100)/10
+y_p = 2.1*(xt)^2 - 15
+plot(xt, y_p, ylim=c(-20, 250))
+points(xi, y, col="red")
+```
+
+```{r}
+
+```
+
