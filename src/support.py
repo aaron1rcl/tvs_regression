@@ -138,6 +138,12 @@ def refine_bounds(bounds, sd):
     t_min = np.min(bound_range)
     t_max = np.max(bound_range)
     
+    if t_min < -5:
+        t_min = -5
+        
+    if t_max > 5:
+        t_max = 5
+    
     # Refine the input bounds for each section
     bounds[bounds < t_min] = t_min
     bounds[bounds > t_max] = t_max

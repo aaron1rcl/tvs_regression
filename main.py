@@ -44,13 +44,15 @@ plt.show()
 
 # Define optimizer settings
 settings = rbfopt.RbfoptSettings(max_evaluations=100, 
-                                 max_noisy_evaluations=10,
+                                 max_noisy_evaluations=100,
                                  minlp_solver_path='/Users/aaronpickering/Desktop/bonmin-osx/bonmin',
                                  print_solver_output=False)
 
 
 ## TVS Regression
 tvs = linearTVSRModel(settings)
+
+# method is gradient descent like (L-BFGS-B) or genetic (differential_evolution)
 tvs.fit(x, y, method="L-BFGS-B")
 
 # Print the summary
