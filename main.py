@@ -3,16 +3,16 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import rbfopt
+
 from linearObjective import linearTauSolver
 import src.support as src
 from linearTVSR import linearTVSRModel
-import statsmodels.api as sm
 
 os.chdir("/Users/aaronpickering/Desktop/projects/cronus/")
 
 
 # Define additional variables
-A = np.array(8, dtype="float")
+A = np.array(2, dtype="float")
 np.random.seed(20)
 x = src.create_input(100, 0.2)
 X, bounds = src.decompose_vector(x, return_bounds=True)
@@ -36,7 +36,6 @@ f = linearTauSolver(X, y, 8, 0, 1, 0, 1)
 f.objective_function(real_shifts)
 
 
-
 # Plot the sequences
 plt.plot(y)
 plt.plot(x)
@@ -52,36 +51,12 @@ settings = rbfopt.RbfoptSettings(max_evaluations=100,
 
 ## TVS Regression
 tvs = linearTVSRModel(settings)
-tvs.fit(x, y)
+tvs.fit(x, y, method="L-BFGS-B")
+
 # Print the summary
 tvs.summary
+#  Linear regression model summary for comparison (from statsmodels)
 tvs.basic_lin_summary
+# Estimated best shift sequences (taus.)
 tvs.shift_seq
-
-
-# Statsmodels comparison (no intercept, same as above)
-mod = sm.OLS(y, x)
-res = mod.fit()
-print(res.summary())
-res.params
-res.summary()
-
-
-# Plot the fit
-plt.scatter(x, y)
-plt.scatter(xi, y)
-plt.scatter(np.arange(-20,20)/10,(np.arange(-20,20)/10)*0.89)
-plt.show()
-
-
-plt.scatter(tvs.posterior['A'], np.exp(-tvs.posterior['likelihood']/170))
-plt.ylim(0,0.5)
-plt.show()
-
-
-
-plt.scatter(tvs.posterior['tsd'], tvs.posterior['likelihood'])
-plt.ylim(200,500)
-plt.xlim(0,15)
-plt.show()
 
