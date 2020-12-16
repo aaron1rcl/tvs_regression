@@ -1,18 +1,14 @@
-import src.support as src
-import numpy as np
-import scipy.optimize as o
-from linearObjective import linearTauSolver
-import rbfopt
-import os
-from scipy.optimize import dual_annealing
-from scipy.optimize import basinhopping
-from scipy.optimize import brute
-from scipy.optimize import fmin
-from scipy.optimize import differential_evolution
-import statsmodels.api as sm
 import pandas as pd
-import emcee
-from multiprocessing import Pool
+import numpy as np
+import os
+import rbfopt
+from scipy.optimize import differential_evolution
+import scipy.optimize as o
+import statsmodels.api as sm
+
+# Local libraries
+import src.support as src
+from linearObjective import linearTauSolver
 
 
 class linearTVSRModel:
@@ -96,7 +92,7 @@ class linearTVSRModel:
         
         return val
     
-    def fit(self, x_train, y_train):
+    def fit(self, x_train, y_train, method="L-BFGS-B"):
         self.x = x_train
         self.X, self.X_bounds = src.decompose_vector(self.x, return_bounds=True)
         self.dimension = self.X.shape[0]
@@ -107,16 +103,17 @@ class linearTVSRModel:
         
         # Assign bounds
         bnds = ((self.min_A,10),(0.00,self.x.shape[0]/2), (0.00, self.max_sd))
-        #self.summary = o.minimize(self.inner_objective, 
-                                 # [10, 2, 2], 
-                                  #method='L-BFGS-B', bounds=bnds)
         
-
-        self.summary = differential_evolution(self.inner_objective,
-                                              bnds, 
-                                              polish=True,
-                                              maxiter=50,
-                                              popsize=1)
+        if method == "L-BFGS-B":
+            self.summary = o.minimize(self.inner_objective, [0, 2, 2], method='L-BFGS-B', bounds=bnds)
+        elif method == "differential_evolution":
+            self.summary = differential_evolution(self.inner_objective,
+                                                  bnds, 
+                                                  polish=True,
+                                                  maxiter=50,
+                                                  popsize=1)
+        else:
+            raise("Error: no compatible optimizer found")
 
         
         
