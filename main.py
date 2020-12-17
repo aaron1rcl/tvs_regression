@@ -32,7 +32,7 @@ u=0
 sd=1
 
 # For comparison, the log likelihood of the actual maximum value (tau-error + y axis error)?
-f = linearTauSolver(X, y, 8, 0, 1, 0, 1)
+f = linearTauSolver(X, y, 2, 0, 1, 0, 1)
 f.objective_function(real_shifts)
 
 
