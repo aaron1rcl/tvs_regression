@@ -4,11 +4,11 @@ import os
 import matplotlib.pyplot as plt
 import rbfopt
 
-from linearObjective import linearTauSolver
-import src.support as src
-from linearTVSR import linearTVSRModel
 
-os.chdir("/Users/aaronpickering/Desktop/projects/cronus/")
+from src.model.linearObjective import linearTauSolver
+from src.model.linearTVSR import linearTVSRModel
+import src.support as src
+
 
 
 # Define additional variables

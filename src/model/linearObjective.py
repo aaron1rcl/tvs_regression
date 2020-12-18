@@ -13,6 +13,7 @@ class linearTauSolver:
         self.tsd = tsd
         self.u = u
         self.sd = sd
+
     
     
     
