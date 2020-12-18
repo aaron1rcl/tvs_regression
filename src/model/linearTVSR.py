@@ -74,8 +74,9 @@ class linearTVSRModel:
         # Loop through all the segments
         vals = np.array([])
         taus = np.array([])
-        print("gets here")
+
         for j in range(0, len(segments.X_segments)):
+            print("Segment " + str(j) + " from " + (str(len(segments.X_segments) - 1)))
             X = segments.X_segments[j]
             y = segments.y_segments[j]
             dim = segments.dimension[j]
@@ -87,7 +88,7 @@ class linearTVSRModel:
             
             # Run inner optimisation loop
             val, tau = self.inner_optimisation(X, y, dim, bnds, f, loop_bounds)
-            print(val, tau)
+
             vals = np.append(vals, val)
             taus = np.append(taus, tau)
         
@@ -124,8 +125,8 @@ class linearTVSRModel:
             val = f.objective_function(x_out)
         else:
             bb = rbfopt.RbfoptUserBlackBox(dim[0], 
-                                           [-4]*dim[0], 
-                                            [4]*dim[0],
+                                           np.array([-4]*dim[0]), 
+                                            np.array([4]*dim[0]),
                                             np.array(['I']*dim[0]), 
                                             f.objective_function)
     

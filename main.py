@@ -43,8 +43,8 @@ plt.plot(xi)
 plt.show()
 
 # Define optimizer settings
-settings = rbfopt.RbfoptSettings(max_evaluations=100, 
-                                 max_noisy_evaluations=100,
+settings = rbfopt.RbfoptSettings(max_evaluations=10, 
+                                 max_noisy_evaluations=10,
                                  minlp_solver_path='/Users/aaronpickering/Desktop/bonmin-osx/bonmin',
                                  print_solver_output=False)
 

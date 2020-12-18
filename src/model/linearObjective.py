@@ -19,15 +19,18 @@ class linearTauSolver:
     
     def objective_function(self, shift_seq):
         
+        
         X_shift = src.shift_array(self.X, shift_seq=np.array(shift_seq, dtype="int"))
+
         X_shift = src.hor_mul(X_shift, self.A)
+        
         
         # Create the prediction
         y_p = np.sum(X_shift, axis=0)
         
         # Calculate the y axis residuals
         res = self.y - y_p
-    
+
         # Calculate the y axis log likelihood
         e_l = src.log_likelihood(x=res, u=self.u, sd=self.sd)
         # Calculate the t axis log likelihood
