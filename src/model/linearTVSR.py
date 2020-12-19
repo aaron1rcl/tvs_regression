@@ -8,7 +8,7 @@ import statsmodels.api as sm
 
 # Local libraries
 import src.support as src
-from linearObjective import linearTauSolver
+from src.model.linearObjective import linearTauSolver
 
 
 class linearTVSRModel:
