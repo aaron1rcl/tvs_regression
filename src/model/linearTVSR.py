@@ -158,4 +158,4 @@ class linearTVSRModel:
         bnds = ((self.min_A,10),(0.00,self.x.shape[0]/2), (0.00, self.max_sd))
         
         # Run the outer loop to optimize the global parameters
-        self.outer_optimization(method="L-BFGS-B", bounds=bnds)
+        self.outer_optimization(method=method, bounds=bnds)
