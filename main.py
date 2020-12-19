@@ -43,8 +43,9 @@ plt.plot(xi)
 plt.show()
 
 # Define optimizer settings
-settings = rbfopt.RbfoptSettings(max_evaluations=10, 
-                                 max_noisy_evaluations=10,
+settings = rbfopt.RbfoptSettings(max_iterations=50,
+                                max_evaluations=100, 
+                                 max_noisy_evaluations=100,
                                  minlp_solver_path='/Users/aaronpickering/Desktop/bonmin-osx/bonmin',
                                  print_solver_output=False)
 
@@ -53,7 +54,7 @@ settings = rbfopt.RbfoptSettings(max_evaluations=10,
 tvs = linearTVSRModel(settings)
 
 # method is gradient descent like (L-BFGS-B) or genetic (differential_evolution)
-tvs.fit(x, y, method="L-BFGS-B")
+tvs.fit(x, y, method="L-BFGS-B", split=False)
 
 # Print the summary
 tvs.summary

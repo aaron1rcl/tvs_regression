@@ -19,11 +19,14 @@ class linearTauSolver:
     
     def objective_function(self, shift_seq):
         
+        # If there is a shift, apply it
+        if not all(shift_seq == 0):
+            X_shift = src.shift_array(self.X, shift_seq=np.array(shift_seq, dtype="int"))
+        else:
+            X_shift = self.X
         
-        X_shift = src.shift_array(self.X, shift_seq=np.array(shift_seq, dtype="int"))
-
+        # Apply the coefficient
         X_shift = src.hor_mul(X_shift, self.A)
-        
         
         # Create the prediction
         y_p = np.sum(X_shift, axis=0)

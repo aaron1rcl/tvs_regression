@@ -9,7 +9,7 @@ import statsmodels.api as sm
 # Local libraries
 import src.support as src
 from src.model.linearObjective import linearTauSolver
-from src.optimisation.dataSegments import dataSegments
+from src.optimisation.segmentation import create_segments
 
 class linearTVSRModel:
     
@@ -60,37 +60,39 @@ class linearTVSRModel:
         
         tu = 0
         u = 0
-        # Refine bounds and define the objective function
-        loop_bounds = src.refine_bounds(self.X_bounds.copy(), tsd)
         
-
+        loop_bounds = src.refine_bounds(self.X_bounds.copy(), tsd)
 
         ##### TO-DO
-        # Define an input to select whether to split or not
-        
-        segments = dataSegments(self.X.copy(), self.x.copy(), self.y.copy(), loop_bounds)
-        segments.refine_bounds()
-        
-        # Loop through all the segments
-        vals = np.array([])
-        taus = np.array([])
+        if self.split == True:
+            # Define an input to select whether to split or not
+            X_segs, y_segs, dim_segs, bnds_segs = create_segments(self.X, self.x, self.y, loop_bounds)
+            # Loop through all the segments
+            vals = np.array([])
+            taus = np.array([])
+    
+            for j in range(0, len(X_segs)):
+                print("Segment " + str(j + 1) + " from " + (str(len(X_segs))))
+                X_seg = X_segs[j]
+                y_seg = y_segs[j]
+                dim_seg = dim_segs[j]
+                # Temporary fix until the bounds are better organised
+                bnds_seg = [[-4]*dim_seg[0], [4]*dim_seg[0]]
+     
+                # Define our solver for the internal loop
+                f = linearTauSolver(X_seg, y_seg, A, tu, tsd, u, sd)
+                
+                # Run inner optimisation loop
+                val, tau = self.inner_optimisation(X_seg, y_seg, dim_seg, f, bnds_seg)
+                
+                #print("------ Seg Likelihood: " + str(val))
+                vals = np.append(vals, val)
+                taus = np.append(taus, tau)
+        else:
+            f = linearTauSolver(self.X.copy(), self.y.copy(), A, tu, tsd, u, sd)
+            bnds_seg = [[-4]*self.X.shape[0], [4]*self.X.shape[0]]
+            vals, taus = self.inner_optimisation(self.X.copy(), self.y.copy(), self.X.shape, f, bnds_seg)
 
-        for j in range(0, len(segments.X_segments)):
-            print("Segment " + str(j) + " from " + (str(len(segments.X_segments) - 1)))
-            X = segments.X_segments[j]
-            y = segments.y_segments[j]
-            dim = segments.dimension[j]
-            # Temporary fix until the bounds are better organised
-            bnds = 0
- 
-            # Define our solver for the internal loop
-            f = linearTauSolver(X, y, A, tu, tsd, u, sd)
-            
-            # Run inner optimisation loop
-            val, tau = self.inner_optimisation(X, y, dim, bnds, f, loop_bounds)
-
-            vals = np.append(vals, val)
-            taus = np.append(taus, tau)
         
         max_likelihood = np.sum(vals)
         # Save the best state parameter from the internal loop
@@ -100,7 +102,7 @@ class linearTVSRModel:
             self.likelihood = max_likelihood 
             self.shift_seq = taus
             
-        print("Likelihood: " + str(round(max_likelihood ,1)))
+        print("Likelihood: " + str(round(max_likelihood ,3)))
                 
         return max_likelihood
     
@@ -118,22 +120,23 @@ class linearTVSRModel:
         else:
             raise("Error: no compatible optimizer found")
             
-    def inner_optimisation(self, X, y, dim, bnds, f, loop_bounds):
+    def inner_optimisation(self, X, y, dim, f, loop_bounds):
         # Create a user black box function
         if np.all(loop_bounds == 0):
-            x_out = np.array([0]*dim[0])
-            val = f.objective_function(x_out)
+            tau = [0]*dim[0]
+            val = f.objective_function(tau)
         else:
+            #print(dim[0])
             bb = rbfopt.RbfoptUserBlackBox(dim[0], 
                                            np.array([-4]*dim[0]), 
                                             np.array([4]*dim[0]),
                                             np.array(['I']*dim[0]), 
                                             f.objective_function)
     
+            #print(self.settings.max_evaluations)
             # Crreate the algorithm from the black box and settings
             alg = rbfopt.RbfoptAlgorithm(self.settings,bb)
             alg.set_output_stream(self.dev_null)
-                
             val, tau, itercount, evalcount, fast_evalcount = alg.optimize()
 
             return val, tau
