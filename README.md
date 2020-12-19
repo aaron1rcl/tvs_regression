@@ -123,7 +123,7 @@ Its clear as the density of impulses increases, the accuracy will decrease. Ther
 <br>
 <br>
 <h5>Bayesian Methods</h5>
-Bayesian regression variations would be especially useful for these problems. Firstly, as indicated above as e/B(t) tends to infinity our coefficient estimates tend to the standard regression values.
+Bayesian regression variations would be especially useful for these problems. Firstly, as indicated above as e/BX(t) tends to infinity our coefficient estimates tend to the standard regression values.
 If have some physical intuition about the time shift process, we can introduce a prior on the shift distribution and get better estimates. Bayesian priors
 could also help to mitigate any overfitting issues.
 <br>
