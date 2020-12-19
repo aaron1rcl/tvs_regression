@@ -1,7 +1,21 @@
-# tvs_regression
+# TVS Regression
+
 Experiments with Time Varying Stochastic Regression
-<br>
-<br>
+
+## Installation 
+
+1. Create `conda`  environment.
+```bash
+conda create -n tvsr python=3.8
+conda activate tvsr
+```
+2. Install requirements
+```bash
+pip install -r requirements.txt
+```
+TODO: add more information about how to install the requirements. 
+
+---
 <h3><b>Motivating Problem</b></h3>
 Consider a typical regression problem of the form y=f(x) + c, where y is the dependent variable and x is the independent regressor. The intention is to find
 the relationship between y and x, defined by some function f(x). The form of the function f(x) isnt particularly important, it could be one of any 
@@ -17,10 +31,10 @@ many of which are unknown. Because of the varying time delays, the actual effect
 <br>
 Doing inference on this type of problem can be really challenging. Typical regression models require a fixed alignment between cause and effect.
 To model this problem, we'd need to assume that the effect occurs after some fixed time 't' which can be inferred from the data. There are a number of models that
-allow us to do this. However, there is a significant issue with these models. If there is any uncertainty in the parameter 't' (t changes or is noisy) the effect will be signicantly attentuated.
+allow us to do this. However, there is a significant issue with these models. If there is any uncertainty in the parameter 't' (t changes or is noisy) the effect will be significantly attenuated.
 <br>
 <br>
-Consider the simple examle below where the effect of the input is 1, we can see this clearly in the picture. The observed input is given by the red line, the blue line is when the effect actually occurs. 
+Consider the simple example below where the effect of the input is 1, we can see this clearly in the picture. The observed input is given by the red line, the blue line is when the effect actually occurs. 
 The first effect happens 1 time point after the input. The second effect happens at the same time as the input. A fixed time delay isn't valid in this case because the time shifts differ.
 <br>
 <br>
@@ -39,7 +53,7 @@ with respect to errors in the y axis only. For EIV, errors are considered in bot
 independent variable eg. because your physical measurements have some degree of random error.
 <br>
 <br>
-A visualisation of EIV regression from the wikipedia page:
+A visualiation of EIV regression from the wikipedia page:
 (https://en.wikipedia.org/wiki/Total_least_squares#/media/File:Total_least_squares.svg)
 <br>
 <br>
@@ -81,7 +95,7 @@ parameterised by B, error mean and sd. We define some initial starting values fo
 <br>
 <br>
 Now we want to find the best possible time shift (tau) for each input impulse in X(t). It stands to reason that the best possible time shift would be the one that is not too far away from the observed impulse 
-and also gives the best possible prediction. In this example, we can get the prediction y by simply multiplying the shifted value by its paramter B. From there we can calculate the likelihood estimate for time shift + prediction error.
+and also gives the best possible prediction. In this example, we can get the prediction y by simply multiplying the shifted value by its parameter B. From there we can calculate the likelihood estimate for time shift + prediction error.
 In principle, we can then try a number of values of tau (i.e. optimise) to maximise the likelihood for this impulse.
 However, we must also consider that the impulses in X(t) are not independent from each other. After shifting, its possible that two or more effects can occur simultaneously.
 This could be particularly problematic if there are multiple impulses within a short period of time, or the impulses have a distributed effect over multiple time points.
