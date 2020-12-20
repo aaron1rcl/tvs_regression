@@ -11,6 +11,7 @@ from src.model.linearObjective import linearTauSolver
 from src.optimisation.segmentation import create_segments
 from src.optimisation.custom_tau_optimiser import tau_optimiser
 
+
 class linearTVSRModel:
     
     
