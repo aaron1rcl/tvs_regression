@@ -1,7 +1,6 @@
-import pandas as pd
 import numpy as np
-import os
-import rbfopt
+import pandas as pd
+
 from scipy.optimize import differential_evolution
 import scipy.optimize as o
 import statsmodels.api as sm
@@ -10,30 +9,19 @@ import statsmodels.api as sm
 import src.support as src
 from src.model.linearObjective import linearTauSolver
 from src.optimisation.segmentation import create_segments
+from src.optimisation.custom_tau_optimiser import tau_optimiser
 
 class linearTVSRModel:
     
     
     
-    def __init__(self, rbf_settings, verbose=False):
+    def __init__(self, verbose=False):
 
         self.shift_seq = None
         self.likelihood = None
         
         self.posterior = pd.DataFrame({"A":0,"tsd":0,"sd":0,"likelihood":0}, index=[0])
         
-        # Establish the settings
-        if rbf_settings is None:
-            self.settings = rbfopt.RbfoptSettings(max_evaluations=100, 
-                                 max_noisy_evaluations=10,
-                                 minlp_solver_path='/Users/aaronpickering/Desktop/bonmin-osx/bonmin',
-                                 print_solver_output=False)
-        else:
-            self.settings = rbf_settings
-        
-        # Create a dev null output to silence the print output
-        if verbose is False:
-            self.dev_null = open(os.devnull, 'w')
             
             
     def basic_linear_regression(self):
@@ -83,15 +71,15 @@ class linearTVSRModel:
                 f = linearTauSolver(X_seg, y_seg, A, tu, tsd, u, sd)
                 
                 # Run inner optimisation loop
-                val, tau = self.inner_optimisation(X_seg, y_seg, dim_seg, f, bnds_seg)
+                val, tau = self.inner_optimisation(dim_seg, f, bnds_seg)
                 
-                #print("------ Seg Likelihood: " + str(val))
+                print("------ Seg Likelihood: " + str(val))
                 vals = np.append(vals, val)
                 taus = np.append(taus, tau)
         else:
-            f = linearTauSolver(self.X.copy(), self.y.copy(), A, tu, tsd, u, sd)
+            input_obj = linearTauSolver(self.X.copy(), self.y.copy(), A, tu, tsd, u, sd)
             bnds_seg = [[-4]*self.X.shape[0], [4]*self.X.shape[0]]
-            vals, taus = self.inner_optimisation(self.X.copy(), self.y.copy(), self.X.shape, f, bnds_seg)
+            vals, taus = self.inner_optimisation(self.X.shape, input_obj, bnds_seg)
 
         
         max_likelihood = np.sum(vals)
@@ -103,6 +91,9 @@ class linearTVSRModel:
             self.shift_seq = taus
             
         print("Likelihood: " + str(round(max_likelihood ,3)))
+        # Append the iteration to a dataframe
+        single_sample = pd.DataFrame({"A":A,"tsd":tsd,"sd":sd,"likelihood":max_likelihood}, index=[0])
+        self.posterior = pd.concat([self.posterior, single_sample], axis=0)
                 
         return max_likelihood
     
@@ -110,34 +101,43 @@ class linearTVSRModel:
     def outer_optimization(self, method, bounds):
         # Run the outer optimisation loop
         if method == "L-BFGS-B":
-            self.summary = o.minimize(self.inner_objective, [0, 2, 2], method='L-BFGS-B', bounds=bounds)
+            self.summary = o.minimize(self.inner_objective, 
+                                      [0, 1, 1],
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      options={"eps":0.2})
+
         elif method == "differential_evolution":
             self.summary = differential_evolution(self.inner_objective,
                                                   bounds, 
                                                   polish=True,
-                                                  maxiter=50,
-                                                  popsize=1)
-        else:
+                                                  maxiter=500,
+                                                  popsize=20)
+        elif method == "grid_search":
+            A_test = np.arange(0.1, stop=4, step=0.2)
+            t_test = np.arange(0.1, stop=2, step=0.2)
+            e_test = np.arange(0.5, stop=3, step=0.2)
+            
+            df = pd.DataFrame(src.expandgrid(A_test, t_test, e_test))
+            df.columns = ["A","tsd","sd"]
+            
+            for i in df.index:
+                self.inner_objective(params=[df.loc[i,'A'], df.loc[i,'tsd'], df.loc[i,'sd']])
+        elif method == "basin_hopping":
+            minimizer_kwargs = {"method": "L-BFGS-B"}
+            self.summary=o.basinhopping(self.inner_objective,
+                                      [0,1,1],niter=100,minimizer_kwargs=minimizer_kwargs)
+        else:   
             raise("Error: no compatible optimizer found")
             
-    def inner_optimisation(self, X, y, dim, f, loop_bounds):
+    def inner_optimisation(self,  dim, f, loop_bounds):
         # Create a user black box function
         if np.all(loop_bounds == 0):
             tau = [0]*dim[0]
             val = f.objective_function(tau)
         else:
-            #print(dim[0])
-            bb = rbfopt.RbfoptUserBlackBox(dim[0], 
-                                           np.array([-4]*dim[0]), 
-                                            np.array([4]*dim[0]),
-                                            np.array(['I']*dim[0]), 
-                                            f.objective_function)
-    
-            #print(self.settings.max_evaluations)
-            # Crreate the algorithm from the black box and settings
-            alg = rbfopt.RbfoptAlgorithm(self.settings,bb)
-            alg.set_output_stream(self.dev_null)
-            val, tau, itercount, evalcount, fast_evalcount = alg.optimize()
+            # ->>>>>> Bounds are hard coded into the model - still figuring out a smart way of doing this
+            val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
 
             return val, tau
             
@@ -155,7 +155,9 @@ class linearTVSRModel:
         self.basic_linear_regression()
         
         # Assign bounds
-        bnds = ((self.min_A,10),(0.00,self.x.shape[0]/2), (0.00, self.max_sd))
+        # I think there should be a bound on the standard deviations in relation to the standard regression
+        # I tried some minimal examples and it makes the optimisation get stuck - need to revisit this.
+        bnds = ((self.min_A,None),(0.00,None), (0.00, None))
         
         # Run the outer loop to optimize the global parameters
         self.outer_optimization(method=method, bounds=bnds)

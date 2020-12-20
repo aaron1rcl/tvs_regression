@@ -1,7 +1,7 @@
-import pandas as pd
 import numpy as np
 from scipy.stats import norm
 from scipy.special import iv
+import itertools
 
 # Create the binomial input sequence
 def create_input(n, p = 0.1, binary=False):
@@ -48,8 +48,11 @@ def decompose_vector(x, return_bounds = False):
 
 # Define a lagging function
 def shift(x, shift=0):
+    # Rolls elements back around if they go off the edge
+    # This will ensure that the likelihood isnt very high at those points
     x = np.roll(x, shift)
     
+
     if shift < 0:
         x[shift:] = np.nan
     elif shift > 0:
@@ -78,9 +81,10 @@ def hor_mul(X, A):
 
 def log_likelihood(x, u, sd):
     l = np.log(norm.pdf(x,loc=u, scale=sd))
-    # Very Hack workaround for low log likelihoods
+    
     if np.all(np.isnan(l)):
-        return -10000
+        return -100
+
     l = l[~np.isnan(l)]
 
     return np.sum(l)
@@ -93,7 +97,8 @@ def log_pmf_discrete(x, u, sd):
     l = np.log(discrete_gaussian_kernel(x, sd))
     
     if np.all(np.isnan(l)):
-        return -10000
+        return -100
+    
     # Remove na values
     l = l[~np.isnan(l)]
     return np.sum(l)
@@ -144,4 +149,9 @@ def refine_bounds(bounds, sd):
     bounds[bounds > t_max] = t_max
     
     return np.array(bounds, dtype="int32")
+
+
+def expandgrid(*itrs):
+   product = list(itertools.product(*itrs))
+   return {'Var{}'.format(i+1):[x[i] for x in product] for i in range(len(itrs))}
     
