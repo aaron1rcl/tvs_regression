@@ -61,7 +61,9 @@ For our problem we assume that we have errors in the y-axis and the t-axis. That
 <br>
 <br>
 Assume we have a series x(t) where we want to determine to the functional relationship f to some other variable y.
-There is a true x(t), in principle it could be anything. But we observe x(t + tau) where tau is some shift in time for each non-zero impulse in the series. 
+There is a true x(t). The series x(t) should be a stationary series with the a known value for for f(x(t)) = 0. 
+We assume that we know when the input series has no effect on the output. In practice this would most likely occur when the x(t) = 0. The series x(t) is also assumed to be in discrete time with a one to one mapping between x(t) and f(x(t)). For clarity, we call all points where f(x(t)) != 0, 'non-zero impulses' because these points might have some effect on the output series.
+Despite the existence of a true x(t), we can't observe it due to noise in the time domain. Rather, we observe x(t + tau) where tau is some shift in time for each non-zero impulse in the series. 
 We also make the assumption that the value of tau is not constant, but rather a random draw from some distribution (eg discrete gaussian, poisson). 
 <br>
 <br>
@@ -80,6 +82,7 @@ Then we define the relationship in the following form:
 <br>
 <br>
 <b>y(t)= f(X(t + Tau)) + e</b>
+where X(t + Tau) is the real series and X(t) is the observed input.
 <br>
 <br>
 We want to find the function f() which maximises the joint likelihood of both Tau and e, the time-domain likelihood and the error likelihood respectively.
@@ -103,11 +106,10 @@ As an example consider the series x=[0,0,1,1,0,0] with Tau = [1,0] and B = 1. Fo
 We need to consider the effects at the same time to accurately calculate the likelihood.
 <br>
 <br>
-As shown above, if the impulses are not independent, then we need to consider time shifts (taus) at the same time. Therefore, we treat the problem of finding the best time shifts as a discrete optimisation problem with constraints.
-In principle, a number of methods would would work for this step. In the code, we use derivative-free optimization provided by the library Rbfopt,
-https://github.com/coin-or/rbfopt. Constraints are calculated based on sequence length and the second moment of the time shift distribution (larger time shifts are highly unlikely and so we apply some reasonable bounds on them). Very low likelihoods for time shifts are remoed from the solution space.
-Once the optimal set of time shifts is found for a given B, we then save the maximum likelihood for this parameter set.
-<br>
+As shown above, if the impulses are not independent, then we need to consider time shifts (taus) at the same time. Therefore, we treat the problem of finding the best time shifts as a discrete optimisation problem.
+For the optimisation step we utilise two assumptions to complete the optimisation. Firstly, smaller shifts are more likely than larger shifts (proportionate to the standard deviation of the tau distribution). This means that we should explore the space of smaller shifts more often than larger shifts. Secondly, impulses close to each other are more likely to be dependent than impulses further away. 
+Therefore, we intialise the optimisation algorith with all parameters set to the mean of the tau distribution (eg zero for the zero mean gaussian). Then we randomly select a small number of impulses, the exact number could be specified manually as a hyperparameter, or inferred from the data by looking at the density of impulses in time. These impulses are randomly changed to a value drawn for the tau distribution (proposal vector), and the likelihood for the proposal is calculated. If the proposal likelihood is higher than the current max likelihood, then we update our initial estimate to the current best guess. This procedure is done in a loop, with the best guess of the taus improving over time.
+
 <br>
 Lastly, we optimise over the set of parameters B, error mean and sd, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation,
 typical methods can be used such as gradient descent, genetic algorithms or annealing. Through optimisation, we find the best fit for the values of B, error mean and sd. The accuracy of the final parameter estimate is based on the ratio of the y-axis error and the effect size B*X(t). As e/B*X(t) tends to infinity, the parameter estimate B tends to the standard linear regression coefficient.
@@ -116,7 +118,7 @@ This also means there is no gaurantee on recovering the exact time shifts, only 
 <br>
 <br>
 
-<h3><b>Optimisation</b></h3>
+<h3><b>Optimisation Note</b></h3>
 As the length of x(t) increases and more and more impulses are introduced, the size of the decomposed matrix X(t) becomes huge. Therefore we make the assumption that 
 impulses further away from each other are functionally independent. That is, because they are far away from each other, the likelihood of an overlap in their effects is very very small. Therefore, the matrix X(t) is broken into a number of segments, where each segment is 
 composed of a smaller number of dependent impulses. Each of these segments can optimised independently, in parallel, with little impact on the final function estimate.  This makes
