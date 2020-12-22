@@ -1,12 +1,43 @@
 import numpy as np
 # Define the optimizer
 
-# start with an initial vector [0]*16
-# loop over all the elements and randomly add or subtract 1 to 2 elements
-# if the result has a higher likelihood -> keep as best parameter
-# if the result has a lower likelihood -> reject and resample
+
 
 def tau_optimiser(init, f, max_iterations, max_dependency=4):
+  
+    '''
+    Optimizer for best Tau Selection
+       
+     Start with an initial vector [0]*16
+     loop over all the elements and randomly add or subtract 1 to 2 elements
+     if the result has a higher likelihood -> keep as best parameter
+     if the result has a lower likelihood -> reject and resample
+    
+    Parameters
+    ----------
+    init : numpy array, length = number of impulses
+        the intial value vector of shifts (taus) to optimize
+    f : linearTauSolver
+        the objective function object to optimize
+    max_iterations : int
+        Max number of iterations for the algorithm. > 1000 is effective
+    max_dependency : int
+        The max number of impulses which are dependent on each other
+        Higher values are harder to optimize but might be necessary for the problem
+
+    Returns
+    -------
+    i_l : float
+        The maximum likelihood value for the inner loop
+    init : numpy array
+        The estimated tau shifts for the maximum likelihood value
+    '''
+    
+    # If splitting is set, there will be shorter segments,
+    #   potentially with less impulses than the max dependency value
+    #   - therefore check and set appropriately
+    if max_dependency > len(init):
+        max_dependency = len(init)
     
     # Define a initial set of tau values - mean of the current tau distribution
     i_l = f.objective_function(np.copy(init))
@@ -28,7 +59,7 @@ def tau_optimiser(init, f, max_iterations, max_dependency=4):
         proposal = np.copy(init)
         for sel in selection:
             flip = np.round(np.random.randn(1)*f.tsd)
-            proposal[sel] = proposal[sel] + flip
+            proposal[sel] = flip
         # Check whether the proposal is better than the initial
         
         p_l = f.objective_function(np.copy(proposal))

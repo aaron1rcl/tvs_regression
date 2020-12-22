@@ -14,13 +14,26 @@ from src.optimisation.custom_tau_optimiser import tau_optimiser
 
 class linearTVSRModel:
     
+    '''
+    The algorithm flow is as follows:
+        fit:
+            -> outer optimisation (optimises the continuous parameters)
+                -> inner_objective (sets up the inner likelihood)
+                    -> inner_optimisation (sets up the inner optimiser)
+                        -> tau optimiser (actually does the inner optimisation of Taus)
+                        
+        1. Basically, Beta, sd, tsd are initilised and fixed (by an optimiser)
+        2. for the fixed beta, sd, tsd the best set of taus are found with the inner optimiser
+        3.  for the best set of taus the max likelihood is returned
+        4. the max likelihood is fed back to the step 1, where a new set of params is initialised (hopefully closer to the true values)
+    
+    '''
     
     
     def __init__(self, verbose=False):
 
         self.shift_seq = None
         self.likelihood = None
-        
         self.posterior = pd.DataFrame({"A":0,"tsd":0,"sd":0,"likelihood":0}, index=[0])
         
             
@@ -35,12 +48,36 @@ class linearTVSRModel:
         
     
     def inner_objective(self, params):
-                     
+        
+        '''     
+        
+         Inner Objective:
+             This function calls the tau optimiser to maximilise the inner likelihood loop.
+             Note that the input params are fixed- this is the best set taus for a fixed A, tsd and sd.
+             The outer optimisation loop controls the variation  of A, tsd, and sd
+             
+        Input: 
+        params: numpy array
+            fixed set of params 
+            
+        Return:
+            max_likelihood: the maximum likelihood estimated for the given A, tsd and sd
+            Note: the optimizer minimizes values, therefore the estimates are multiplied by -1
+            
+        Self assigns (to the object):
+            self.likelihood: the best value of the likelihood overall (from all outer optimisation calls)
+            self.shift_seq: the tau sequence for the best likelihood estimate overall
+            self.posterior: a record of all likelihood optimisation steps. this helps to see the full solutions space for analysis
+            
+         
+        '''
         print(params)       
         A = params[0]
         tsd = params[1]
         sd = params[2]
         
+        # Hack workaround for values outside of the range
+        # Need a cleaner solution
         if tsd <= 0:
             return 10000
         
@@ -50,37 +87,38 @@ class linearTVSRModel:
         tu = 0
         u = 0
         
-        loop_bounds = src.refine_bounds(self.X_bounds.copy(), tsd)
+        # Apply some rules to the loop boundaries
+        loop_bounds = src.refine_bounds(np.copy(self.X), tsd)
 
         ##### TO-DO
         if self.split == True:
             # Define an input to select whether to split or not
-            X_segs, y_segs, dim_segs, bnds_segs = create_segments(self.X, self.x, self.y, loop_bounds)
+            X_segs, y_segs, dim_segs, bnds_segs = create_segments(np.copy(self.X), np.copy(self.x), np.copy(self.y), loop_bounds)
             # Loop through all the segments
             vals = np.array([])
             taus = np.array([])
     
+            # Loop through the segments and apply the segmentation independently
             for j in range(0, len(X_segs)):
                 print("Segment " + str(j + 1) + " from " + (str(len(X_segs))))
                 X_seg = X_segs[j]
                 y_seg = y_segs[j]
                 dim_seg = dim_segs[j]
-                # Temporary fix until the bounds are better organised
-                bnds_seg = [[-4]*dim_seg[0], [4]*dim_seg[0]]
-     
+
                 # Define our solver for the internal loop
                 f = linearTauSolver(X_seg, y_seg, A, tu, tsd, u, sd)
                 
                 # Run inner optimisation loop
-                val, tau = self.inner_optimisation(dim_seg, f, bnds_seg)
+                val, tau = self.inner_optimisation(dim_seg, f)
                 
                 print("------ Seg Likelihood: " + str(val))
                 vals = np.append(vals, val)
                 taus = np.append(taus, tau)
         else:
-            input_obj = linearTauSolver(self.X.copy(), self.y.copy(), A, tu, tsd, u, sd)
-            bnds_seg = [[-4]*self.X.shape[0], [4]*self.X.shape[0]]
-            vals, taus = self.inner_optimisation(self.X.shape, input_obj, bnds_seg)
+            # Define the solver function
+            input_obj = linearTauSolver(np.copy(self.X), np.copy(self.y), A, tu, tsd, u, sd)
+            # Run the inner optimisation.
+            vals, taus = self.inner_optimisation(np.copy(self.X.shape), input_obj)
 
         
         max_likelihood = np.sum(vals)
@@ -106,7 +144,7 @@ class linearTVSRModel:
                                       [0, 1, 1],
                                       method='L-BFGS-B',
                                       bounds=bounds,
-                                      options={"eps":0.2})
+                                      options ={"eps":0.2})
 
         elif method == "differential_evolution":
             self.summary = differential_evolution(self.inner_objective,
@@ -131,16 +169,11 @@ class linearTVSRModel:
         else:   
             raise("Error: no compatible optimizer found")
             
-    def inner_optimisation(self,  dim, f, loop_bounds):
+    def inner_optimisation(self,  dim, f):
         # Create a user black box function
-        if np.all(loop_bounds == 0):
-            tau = [0]*dim[0]
-            val = f.objective_function(tau)
-        else:
-            # ->>>>>> Bounds are hard coded into the model - still figuring out a smart way of doing this
-            val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
+        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
 
-            return val, tau
+        return val, tau
             
             
     def fit(self, x_train, y_train, method="L-BFGS-B", split=True):
