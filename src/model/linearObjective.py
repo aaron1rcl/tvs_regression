@@ -41,7 +41,11 @@ class linearTauSolver:
         # The t Axis is a discrete parameter - using continuous likelihood leads to the parameter shrinkage
         t_l = src.log_pmf_discrete(x=shift_seq, u=self.tu, sd=self.tsd)
         
+        # Add a penalty to the lin regression solution (tsd = 0)
+        # This helps to avoid the local minima and go straight for the real solution
+        p_l = np.log(self.tsd)*10
+        
         #print(-(e_l + t_l))
         # Assume that the y and t errors are independent
         # Want to get the maximum likelihood! Hence the negative operator
-        return -(e_l + t_l)
+        return -(e_l + t_l + p_l)
