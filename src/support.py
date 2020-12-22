@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import norm
+from scipy.stats import mode
 from scipy.special import iv
 import itertools
 
@@ -124,7 +125,10 @@ def linear_objective_fn(X, y, shift_seq, A, tu, tsd, u, sd):
 
 # Modified bessel function from wikipedia for discrete gaussian case
 def discrete_gaussian_kernel(x, sd):
-    return np.exp(-sd) * iv(x, sd)
+    try:
+        return np.exp(-sd) * iv(x, sd)
+    except:
+        return 1000
 
 
 def refine_bounds(bounds, sd):
@@ -136,6 +140,7 @@ def refine_bounds(bounds, sd):
     
     # Calculate the pmfs
     pmf = discrete_gaussian_kernel(bound_range, sd)
+
     
     bound_range = bound_range[pmf > 0.0001]
     
@@ -154,4 +159,17 @@ def refine_bounds(bounds, sd):
 def expandgrid(*itrs):
    product = list(itertools.product(*itrs))
    return {'Var{}'.format(i+1):[x[i] for x in product] for i in range(len(itrs))}
+    
+
+def standardise_f0(x, f_0):
+    x_min = np.min(x)
+    x_max = np.max(x)
+    x = (x - x_min) / (x_max - x_min)
+    return x - mode(x).mode[-1]
+
+def standardise(x):
+    x_min = np.min(x)
+    x_max = np.max(x)
+    x = (x - x_min) / (x_max - x_min)
+    return x
     

@@ -88,7 +88,7 @@ class linearTVSRModel:
         u = 0
         
         # Apply some rules to the loop boundaries
-        loop_bounds = src.refine_bounds(np.copy(self.X), tsd)
+        #loop_bounds = src.refine_bounds(np.copy(self.X), tsd)
 
         ##### TO-DO
         if self.split == True:
@@ -171,7 +171,7 @@ class linearTVSRModel:
             
     def inner_optimisation(self,  dim, f):
         # Create a user black box function
-        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
+        val, tau = tau_optimiser([0]*dim[0], f, 500, 3)
 
         return val, tau
             
@@ -191,7 +191,7 @@ class linearTVSRModel:
         # Assign bounds
         # I think there should be a bound on the standard deviations in relation to the standard regression
         # I tried some minimal examples and it makes the optimisation get stuck - need to revisit this.
-        bnds = ((self.min_A,None),(0.00,None), (0.00, None))
+        bnds = ((-2,2),(0.00,3), (0.00, 1))
         
         # Run the outer loop to optimize the global parameters
         self.outer_optimization(method=method, bounds=bnds)

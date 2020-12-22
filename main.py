@@ -11,12 +11,12 @@ import src.support as src
 
 
 # Define additional variables
-A = np.array(2, dtype="float")
-np.random.seed(20)
+A = np.array(0.5, dtype="float")
+np.random.seed(17)
 x = src.create_input(100, 0.2, binary=False)
 X, bounds = src.decompose_vector(x, return_bounds=True)
 # Generate a random shift seq
-np.random.seed(21)
+np.random.seed(15)
 real_shifts = np.round(np.random.randn(X.shape[0]))
 real_shifts = np.array(real_shifts, dtype="int")
 # Shift the series
@@ -26,6 +26,14 @@ X_shift = src.hor_mul(X_shift, A)
 xi = np.sum(src.shift_array(X, np.array(real_shifts, dtype="int")), axis=0)
 y = np.sum(X_shift, axis=0) + np.random.randn(X_shift.shape[1])
 
+# Standardise the values
+# The x value is centred to the given f_0 point
+x = src.standardise_f0(x, f_0=0)
+X, bounds = src.decompose_vector(x, return_bounds=True)
+y = src.standardise(y)
+y = y - np.mean(y)
+
+
 #Define the parameters, again only for reference.
 tu=0
 tsd=1
@@ -33,7 +41,7 @@ u=0
 sd=1
 
 # For comparison, the log likelihood of the actual maximum value (tau-error + y axis error)?
-f = linearTauSolver(X, y, 2, 0, 1, 0, 1)
+f = linearTauSolver(X, y, 0.3, 0, 1, 0, 0.147)
 
 # This line calculates the alikelihood of the actual parameters (approximately)
 f.objective_function(real_shifts)
@@ -42,7 +50,7 @@ f.objective_function(real_shifts)
 # Plot the sequences
 plt.plot(y)
 plt.plot(x)
-plt.plot(xi)
+#plt.plot(xi)
 plt.show()
 
 ## TVS Regression - initialise a model
@@ -54,7 +62,7 @@ tvs = linearTVSRModel()
 # The grid search is only set up to reproduce this specific example. If you change the example, change the method too.
 # The solution space has saddle points
 #   im playing around with more global methods which can handle these local minima
-tvs.fit(x, y, method="L-BFGS-B", split=False)
+tvs.fit(x, y, method="differential_evolution", split=False)
 
 # Print the summary
 tvs.summary
@@ -66,6 +74,6 @@ tvs.basic_lin_summary
 tvs.shift_seq
 
 # Plot the sample chain
-plt.scatter(tvs.posterior['A'], tvs.posterior['likelihood'])
-plt.ylim(155, 220)
-
+plt.scatter(tvs.posterior['A'], np.exp(tvs.posterior['likelihood']))
+plt.ylim(tvs.posterior['likelihood'].min()-5,tvs.posterior['likelihood'].min()+10)
+plt.xlim(-1.2,1.2)
