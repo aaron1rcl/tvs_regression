@@ -92,7 +92,11 @@ plt.plot(x)
 plt.show()
 
 # Scatter Plots
-plt.scatter(x, y)
+plt.scatter(x + tvs.summary.x[3], y)
+plt.scatter(y_p, y)
+plt.show()
+
+plt.scatter(y_p, y)
 plt.show()
 
 
