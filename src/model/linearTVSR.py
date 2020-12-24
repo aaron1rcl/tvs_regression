@@ -151,7 +151,7 @@ class linearTVSRModel:
             self.summary = differential_evolution(self.inner_objective,
                                                   bounds, 
                                                   polish=True,
-                                                  maxiter=5,
+                                                  maxiter=20,
                                                   popsize=10)
         elif method == "grid_search":
             A_test = np.arange(0.1, stop=4, step=0.2)
@@ -172,7 +172,7 @@ class linearTVSRModel:
             
     def inner_optimisation(self,  dim, f):
         # Create a user black box function
-        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
+        val, tau = tau_optimiser([0]*dim[0], f, 500, 3)
 
         return val, tau
             
