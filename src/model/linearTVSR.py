@@ -75,6 +75,7 @@ class linearTVSRModel:
         A = params[0]
         tsd = params[1]
         sd = params[2]
+        C = params[3]
         
         # Hack workaround for values outside of the range
         # Need a cleaner solution
@@ -88,7 +89,7 @@ class linearTVSRModel:
         u = 0
         
         # Apply some rules to the loop boundaries
-        #loop_bounds = src.refine_bounds(np.copy(self.X), tsd)
+        loop_bounds = src.refine_bounds(np.copy(self.X), tsd)
 
         ##### TO-DO
         if self.split == True:
@@ -106,7 +107,7 @@ class linearTVSRModel:
                 dim_seg = dim_segs[j]
 
                 # Define our solver for the internal loop
-                f = linearTauSolver(X_seg, y_seg, A, tu, tsd, u, sd)
+                f = linearTauSolver(X_seg, y_seg, A, tu, tsd, u, sd, C)
                 
                 # Run inner optimisation loop
                 val, tau = self.inner_optimisation(dim_seg, f)
@@ -116,7 +117,7 @@ class linearTVSRModel:
                 taus = np.append(taus, tau)
         else:
             # Define the solver function
-            input_obj = linearTauSolver(np.copy(self.X), np.copy(self.y), A, tu, tsd, u, sd)
+            input_obj = linearTauSolver(np.copy(self.X), np.copy(self.y), A, tu, tsd, u, sd, C)
             # Run the inner optimisation.
             vals, taus = self.inner_optimisation(np.copy(self.X.shape), input_obj)
 
@@ -141,7 +142,7 @@ class linearTVSRModel:
         # Run the outer optimisation loop
         if method == "L-BFGS-B":
             self.summary = o.minimize(self.inner_objective, 
-                                      [0, 1, 1],
+                                      [0, 1, 1, 0.3],
                                       method='L-BFGS-B',
                                       bounds=bounds,
                                       options ={"eps":0.2})
@@ -150,8 +151,8 @@ class linearTVSRModel:
             self.summary = differential_evolution(self.inner_objective,
                                                   bounds, 
                                                   polish=True,
-                                                  maxiter=500,
-                                                  popsize=20)
+                                                  maxiter=5,
+                                                  popsize=10)
         elif method == "grid_search":
             A_test = np.arange(0.1, stop=4, step=0.2)
             t_test = np.arange(0.1, stop=2, step=0.2)
@@ -171,7 +172,7 @@ class linearTVSRModel:
             
     def inner_optimisation(self,  dim, f):
         # Create a user black box function
-        val, tau = tau_optimiser([0]*dim[0], f, 500, 3)
+        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
 
         return val, tau
             
@@ -191,7 +192,7 @@ class linearTVSRModel:
         # Assign bounds
         # I think there should be a bound on the standard deviations in relation to the standard regression
         # I tried some minimal examples and it makes the optimisation get stuck - need to revisit this.
-        bnds = ((-2,2),(0.00,3), (0.00, 1))
+        bnds = ((-2,2),(0.00,3), (0.00, 1), (-1,1))
         
         # Run the outer loop to optimize the global parameters
         self.outer_optimization(method=method, bounds=bnds)
