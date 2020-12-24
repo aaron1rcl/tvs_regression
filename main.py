@@ -13,25 +13,25 @@ import src.support as src
 # Define additional variables
 A = np.array(0.5, dtype="float")
 np.random.seed(17)
-x = src.create_input(100, 0.2, binary=False)
+x = src.create_input(200, 0.2, binary=False)
 X, bounds = src.decompose_vector(x, return_bounds=True)
 # Generate a random shift seq
 np.random.seed(15)
-real_shifts = np.round(np.random.randn(X.shape[0]))
+real_shifts = np.round(np.random.randn(X.shape[0])*2)
 real_shifts = np.array(real_shifts, dtype="int")
 # Shift the series
 X_shift = src.shift_array(X, np.array(real_shifts, dtype="int"))
 X_shift = src.hor_mul(X_shift, A)
 # Retrieve the observed series, only for reference.
 xi = np.sum(src.shift_array(X, np.array(real_shifts, dtype="int")), axis=0)
-y = np.sum(X_shift, axis=0) + np.random.randn(X_shift.shape[1])
+y = np.sum(X_shift, axis=0) + np.random.randn(X_shift.shape[1])*0.2 + 6.5
 
 # Standardise the values
 # The x value is centred to the given f_0 point
 x = src.standardise_f0(x, f_0=0)
 X, bounds = src.decompose_vector(x, return_bounds=True)
 y = src.standardise(y)
-y = y - np.mean(y)
+#y = y - np.mean(y)
 
 
 #Define the parameters, again only for reference.
@@ -41,7 +41,7 @@ u=0
 sd=1
 
 # For comparison, the log likelihood of the actual maximum value (tau-error + y axis error)?
-f = linearTauSolver(X, y, 0.3, 0, 1, 0, 0.147)
+f = linearTauSolver(X, y, 0.9, 0, 2, 0, 0.10,0)
 
 # This line calculates the alikelihood of the actual parameters (approximately)
 f.objective_function(real_shifts)
@@ -74,6 +74,31 @@ tvs.basic_lin_summary
 tvs.shift_seq
 
 # Plot the sample chain
-plt.scatter(tvs.posterior['A'], np.exp(tvs.posterior['likelihood']))
-plt.ylim(tvs.posterior['likelihood'].min()-5,tvs.posterior['likelihood'].min()+10)
+plt.scatter(tvs.posterior['A'], np.exp(-tvs.posterior['likelihood']))
+plt.ylim(np.exp(-(tvs.posterior['likelihood'].min())),np.exp(-(tvs.posterior['likelihood'].min())))
 plt.xlim(-1.2,1.2)
+
+# Predict (fit)
+f = linearTauSolver(X, y, tvs.summary.x[0], 0, tvs.summary.x[1], 0, tvs.summary.x[2], tvs.summary.x[3])
+
+# Create a prediction
+y_p = f.predict(tvs.shift_seq)
+
+
+# Plot the sequences
+plt.plot(y)
+plt.plot(y_p)
+plt.plot(x)
+plt.show()
+
+# Scatter Plots
+plt.scatter(x + tvs.summary.x[3], y)
+plt.scatter(y_p, y)
+plt.show()
+
+plt.scatter(y_p, y)
+plt.show()
+
+
+
+

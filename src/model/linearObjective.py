@@ -5,7 +5,7 @@ import numpy as np
 class linearTauSolver:
     
     
-    def __init__(self, X, y, A, tu, tsd, u, sd):
+    def __init__(self, X, y, A, tu, tsd, u, sd, C):
         self.X = np.copy(X)
         self.y = np.copy(y)
         self.A = A
@@ -13,6 +13,7 @@ class linearTauSolver:
         self.tsd = tsd
         self.u = u
         self.sd = sd
+        self.C = C
         
     
     
@@ -29,7 +30,7 @@ class linearTauSolver:
         X_shift = src.hor_mul(np.copy(X_shift), self.A)
         
         # Create the prediction
-        y_p = np.sum(X_shift, axis=0)
+        y_p = np.sum(X_shift, axis=0) + self.C
 
         
         # Calculate the y axis residuals
@@ -46,3 +47,20 @@ class linearTauSolver:
         # Assume that the y and t errors are independent
         # Want to get the maximum likelihood! Hence the negative operator
         return -(e_l + t_l)
+    
+    
+    def predict(self, shift_seq):
+        
+        # If there is a shift, apply it
+        if not all(shift_seq == 0):
+            X_shift = src.shift_array(np.copy(self.X), shift_seq=np.array(shift_seq, dtype="int"))
+        else:
+            X_shift = np.copy(self.X)
+        
+        # Apply the coefficient
+        X_shift = src.hor_mul(np.copy(X_shift), self.A)
+        
+        # Create the prediction
+        y_p = np.sum(X_shift, axis=0) + self.C
+
+        return y_p
