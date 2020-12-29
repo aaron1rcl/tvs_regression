@@ -19,6 +19,11 @@ class linearTauSolver:
     
     
     def objective_function(self, shift_seq):
+        ''' Calculates the likelihood for a given set of X, y, A, C and shift seq 
+        
+            The likehood is the sum of the likelihood in the time domain (t-axis)
+            and the prediction error (y-axis)
+        '''
         
         # If there is a shift, apply it
         if not all(shift_seq == 0):
@@ -43,13 +48,20 @@ class linearTauSolver:
         t_l = src.log_pmf_discrete(x=shift_seq, u=self.tu, sd=self.tsd)
         
 
-        #print(-(e_l + t_l))
-        # Assume that the y and t errors are independent
-        # Want to get the maximum likelihood! Hence the negative operator
+        # Want to get the maximum likelihood! Hence the negative multiplier
         return -(e_l + t_l)
     
     
     def predict(self, shift_seq):
+        
+        ''' Produces a 'prediction' for a given shift sequence, A and C.
+        
+            The results is not a true prediction because the shift sequence in
+            the time domain in stochastic, but it can be used for assessing the fit.
+            Additionally, the last predicted shift might be beneficial for true predictions, if the input
+            has a lagged effect.
+        
+        '''
         
         # If there is a shift, apply it
         if not all(shift_seq == 0):

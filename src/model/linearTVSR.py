@@ -29,24 +29,74 @@ class linearTVSRModel:
     
     '''
     
+    scaled = False
+    rescaled = False
+    shift_seq = None
+    likelihood = None
+    history = None
+
     
     def __init__(self, verbose=False):
-
-        self.shift_seq = None
-        self.likelihood = None
-        self.posterior = pd.DataFrame({"A":0,"tsd":0,"sd":0,"likelihood":0}, index=[0])
+        self.epoch = 0
         
-            
-            
+               
     def basic_linear_regression(self):
+        
+        ''' Runs a linear regression (y = Ax + C) with statsmodels 
+            The linear regression model can be useful for comparison.
+        
+        '''
         # Statsmodels comparison (no intercept, same as above)
-        mod = sm.OLS(self.y, self.x)
+        X_in = np.copy(self.x)
+        X_in = sm.add_constant(X_in)
+        mod = sm.OLS(self.y, X_in)
         res = mod.fit()
         self.basic_lin_summary = res.summary()
         self.min_A = res.params[0]
-        self.max_sd = np.std(res.predict(self.x)  - self.y)
+        self.max_sd = np.std(res.predict(X_in)  - self.y)
         
+        
+    def scale_inputs(self, max_t):
+        
+        ''' Scales the input parameter space to a range between zero and 1.
+        
+            #TO-DO:
+                - deal with the fixed values of scale_t
+                - allow for input to f_0  
+        '''
+        if self.scaled is False:
+            self.x_min = np.min(self.x)
+            self.x_max = np.max(self.x)
+            self.x = src.standardise_f0(self.x, f_0=0)
+            self.y_min = np.min(self.y)
+            self.y_max = np.max(self.y)
+            self.y = src.standardise(self.y)
     
+            # Scale the time dimension to have a max value of 1
+            if max_t is None:
+                #Make the max t 5% of the length by default
+                self.scale_t = self.x.shape[0]*0.05
+            else:
+                self.scale_t = max_t
+                
+            self.scaled = True
+            
+    def rescale_input_and_params(self):
+        ''' Rescales all parameters and results back to the original space '''
+        if self.rescaled is False:
+            self.x = (self.x*(self.x_max - self.x_min)) + self.x_min
+            self.y = (self.y*(self.y_max - self.y_min)) + self.y_min
+            
+            # Update the summary object
+            self.summary.x[3] = (self.y_max - self.y_min)*self.summary.x[3] + self.y_min
+            self.summary.x[2] = self.summary.x[2]*(self.y_max - self.y_min)
+            self.summary.x[1] = self.summary.x[1]*self.scale_t
+            
+            scale_factor = (self.x_max - self.x_min) / (self.y_max - self.y_min)
+            self.summary.x[0] = self.summary.x[0]/scale_factor
+            
+            self.rescaled = True
+            
     def inner_objective(self, params):
         
         '''     
@@ -67,13 +117,13 @@ class linearTVSRModel:
         Self assigns (to the object):
             self.likelihood: the best value of the likelihood overall (from all outer optimisation calls)
             self.shift_seq: the tau sequence for the best likelihood estimate overall
-            self.posterior: a record of all likelihood optimisation steps. this helps to see the full solutions space for analysis
+            self.history: a record of all likelihood optimisation steps. this helps to see the full solutions space for analysis
             
-         
         '''
-        print(params)       
+        self.epoch = self.epoch + 1
+        print("Epoch: " , self.epoch)   
         A = params[0]
-        tsd = params[1]
+        tsd = params[1]*self.scale_t
         sd = params[2]
         C = params[3]
         
@@ -122,7 +172,9 @@ class linearTVSRModel:
             vals, taus = self.inner_optimisation(np.copy(self.X.shape), input_obj)
 
         
+        
         max_likelihood = np.sum(vals)
+        
         # Save the best state parameter from the internal loop
         if self.likelihood is None:
             self.likelihood = max_likelihood 
@@ -131,9 +183,13 @@ class linearTVSRModel:
             self.shift_seq = taus
             
         print("Likelihood: " + str(round(max_likelihood ,3)))
-        # Append the iteration to a dataframe
-        single_sample = pd.DataFrame({"A":A,"tsd":tsd,"sd":sd,"likelihood":max_likelihood}, index=[0])
-        self.posterior = pd.concat([self.posterior, single_sample], axis=0)
+        
+        # Append the iteration results to a dataframe (to track the history)
+        if self.history is not None:
+            single_sample = pd.DataFrame({"A":A,"tsd":tsd,"sd":sd,"likelihood":-1*max_likelihood}, index=[0])
+            self.history = pd.concat([self.history, single_sample], axis=0)
+        else:
+            self.history = pd.DataFrame({"A":A,"tsd":tsd,"sd":sd,"likelihood":-1*max_likelihood}, index=[0])
                 
         return max_likelihood
     
@@ -142,7 +198,7 @@ class linearTVSRModel:
         # Run the outer optimisation loop
         if method == "L-BFGS-B":
             self.summary = o.minimize(self.inner_objective, 
-                                      [0, 1, 1, 0.3],
+                                      [0, 1, 1, 0],
                                       method='L-BFGS-B',
                                       bounds=bounds,
                                       options ={"eps":0.2})
@@ -153,46 +209,42 @@ class linearTVSRModel:
                                                   polish=True,
                                                   maxiter=20,
                                                   popsize=10)
-        elif method == "grid_search":
-            A_test = np.arange(0.1, stop=4, step=0.2)
-            t_test = np.arange(0.1, stop=2, step=0.2)
-            e_test = np.arange(0.5, stop=3, step=0.2)
-            
-            df = pd.DataFrame(src.expandgrid(A_test, t_test, e_test))
-            df.columns = ["A","tsd","sd"]
-            
-            for i in df.index:
-                self.inner_objective(params=[df.loc[i,'A'], df.loc[i,'tsd'], df.loc[i,'sd']])
-        elif method == "basin_hopping":
-            minimizer_kwargs = {"method": "L-BFGS-B"}
-            self.summary=o.basinhopping(self.inner_objective,
-                                      [0,1,1],niter=100,minimizer_kwargs=minimizer_kwargs)
         else:   
             raise("Error: no compatible optimizer found")
             
     def inner_optimisation(self,  dim, f):
-        # Create a user black box function
-        val, tau = tau_optimiser([0]*dim[0], f, 500, 3)
+        # Run the inner optimisation algorithm and retrieve the max likelihood
+        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
 
         return val, tau
             
             
-    def fit(self, x_train, y_train, method="L-BFGS-B", split=True):
+    def fit(self, x_train, y_train, method="L-BFGS-B", split=True, max_t=None):
+        
+        # Define the setting
+        self.split = split
         
         # Load the data into the object memory and decompose the vector
         self.x = x_train
+        self.y = y_train
+        
+        # Scale the input parameter space and save the transforms (makes optimisation easier)
+        self.scale_inputs(max_t=max_t)
+        
+        # Decompose the input series
         self.X, self.X_bounds = src.decompose_vector(self.x, return_bounds=True)
         self.dimension = self.X.shape[0]
-        self.y = y_train
-        self.split = split
+
         
         # Run a standard linear regression first
         self.basic_linear_regression()
         
         # Assign bounds
-        # I think there should be a bound on the standard deviations in relation to the standard regression
-        # I tried some minimal examples and it makes the optimisation get stuck - need to revisit this.
-        bnds = ((-2,2),(0.00,3), (0.00, 1), (-1,1))
+        # Bounds can be fixed because the input space has been scaled
+        bnds = ((-2,2),(0.00,1), (0.00, 1), (-1,1))
         
         # Run the outer loop to optimize the global parameters
         self.outer_optimization(method=method, bounds=bnds)
+        
+        # Rescale params and input sequences back to the originals
+        self.rescale_input_and_params()
