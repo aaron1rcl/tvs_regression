@@ -11,9 +11,9 @@ import src.support as src
 
 
 # Define additional variables
-A = np.array(0.5, dtype="float")
+A = np.array(0.1, dtype="float")
 np.random.seed(17)
-x = src.create_input(200, 0.2, binary=False)
+x = src.create_input(500, 0.2, binary=False)
 X, bounds = src.decompose_vector(x, return_bounds=True)
 # Generate a random shift seq
 np.random.seed(15)
@@ -28,9 +28,10 @@ y = np.sum(X_shift, axis=0) + np.random.randn(X_shift.shape[1])*0.2 + 6.5
 
 # Standardise the values
 # The x value is centred to the given f_0 point
-x = src.standardise_f0(x, f_0=0)
-X, bounds = src.decompose_vector(x, return_bounds=True)
-y = src.standardise(y)
+#x = src.standardise_f0(x, f_0=0)
+#X, bounds = src.decompose_vector(x, return_bounds=True)
+
+#y = src.standardise(y)
 #y = y - np.mean(y)
 
 
@@ -73,10 +74,12 @@ tvs.basic_lin_summary
 # Estimated best shift sequences (taus.)
 tvs.shift_seq
 
-# Plot the sample chain
-plt.scatter(tvs.posterior['A'], np.exp(-tvs.posterior['likelihood']))
-plt.ylim(np.exp(-(tvs.posterior['likelihood'].min())),np.exp(-(tvs.posterior['likelihood'].min())))
-plt.xlim(-1.2,1.2)
+# Plot the fit history
+tvs.history = tvs.history.reset_index()
+plt.plot(tvs.history['likelihood'])
+plt.ylim(-100,200)
+plt.show()
+
 
 # Predict (fit)
 f = linearTauSolver(X, y, tvs.summary.x[0], 0, tvs.summary.x[1], 0, tvs.summary.x[2], tvs.summary.x[3])
@@ -88,7 +91,6 @@ y_p = f.predict(tvs.shift_seq)
 # Plot the sequences
 plt.plot(y)
 plt.plot(y_p)
-plt.plot(x)
 plt.show()
 
 # Scatter Plots
@@ -96,8 +98,6 @@ plt.scatter(x + tvs.summary.x[3], y)
 plt.scatter(y_p, y)
 plt.show()
 
-plt.scatter(y_p, y)
-plt.show()
 
 
 
