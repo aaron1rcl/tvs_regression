@@ -11,9 +11,9 @@ import src.support as src
 
 
 # Define additional variables
-A = np.array(0.1, dtype="float")
+A = np.array(0.15, dtype="float")
 np.random.seed(17)
-x = src.create_input(500, 0.2, binary=False)
+x = src.create_input(100, 0.2, binary=False)
 X, bounds = src.decompose_vector(x, return_bounds=True)
 # Generate a random shift seq
 np.random.seed(15)
