@@ -10,5 +10,15 @@ plot(sin(2*pi*t), type="lines")
 f = rep(NA, length(t))
 f[1] = 2*pi
 for (i in 2:length(t)){
-  f[i] = f[i - 1] + rnorm(1, 0, 0.04*pi)
+  f[i] = 0.9*f[i - 1] + rnorm(1, 0, 0.001*pi)
 }
+
+plot(f, type="lines")
+
+plot(sin(f*t), type="lines")
+lines(sin(2*pi*t), col="red")
+
+y = sin(f*t)
+
+stft(y)
+
