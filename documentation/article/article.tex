@@ -6,6 +6,7 @@
 \usepackage{amssymb}
 \usepackage[all]{xy}
 \usepackage{graphicx}
+\usepackage{xcolor}
 
 \begin{document}
 
@@ -19,18 +20,17 @@
 
 \section{Introduction}
 
-Consider the typical univariate regression problem where the intention is to find
-the relationship between $x$ and $y$. When extended to time series, a number of time specific complexities arise. For the specific case where the input $x$ affects the output $y$, with a random time delay in between, the estimated coefficients (or weights, predictions etc) are significantly attenuated. This attenuation occurs both in traditional statistical models and machine learning models, and for certain problems can be a serious limitation. The following document proposes techniques for handling this class of time series regression.
+Consider the typical univariate regression problem where the intention is to find the relationship between $x$ and $y$. When extended to time series, a number of time specific complexities arise. For the specific case where the input $x$ affects the output $y$, with a random time delay in between, the estimated coefficients (or weights, predictions etc) are significantly attenuated. This attenuation occurs both in traditional statistical models and machine learning models, and for certain problems can be a serious limitation. The following document proposes techniques for handling this class of time series regression.
 
 As an example, let us take the management of blood sugar level in diabetes patients. In people with diabetes, the pancreas can't effectively regulate blood sugar levels. Therefore, these levels must be controlled by insulin injections and a special diet. The challenge for many people is that the relationship between the input (insulin) and output (blood sugar) is extremely complex. The effect of the insulin injection might be observed after $15$, $20$  or $t$ minutes depending on a number of factors, many of which are unknown. Due to the stochastic nature of the time delays, the actual effect can't be easily determined. It is difficult to differentiate the effect of the insulin injection from other factors and accurately determine how much one should take.
 
-Inference for this type of problem is especially challenging. Typical regression models require a fixed alignment between cause and effect. Using standard methods, we'd need to assume that the effect occurs after some fixed time 't' which can be inferred from the data. However, if there is any uncertainty in the parameter $t$ ($t$ changes or is noisy) the resulting estimates will be significantly attenuated.
+Inference for this type of problem is especially challenging. Typical regression models require a fixed alignment between cause and effect. Using standard methods, we'd need to assume that the effect occurs after some fixed time $t$ which can be inferred from the data. However, if there is any uncertainty in the parameter $t$ ($t$ changes or is noisy) the resulting estimates will be significantly attenuated.
 
-Consider the simple example where the effect of the input is $1$, as shown in the image below. The observed input is given by the red line, the blue line is when the effect actually occurs. The first effect happens 1 time point after the input. The second effect happens at the same time as the input. A fixed time delay isn't valid in this case because the time shifts differ.
+Consider the simple example where the effect of the input is $1$, as shown in the image below. The observed input is given by the red line, the blue line is when the effect actually occurs. The first effect happens one time point after the input. The second effect happens at the same time as the input. A fixed time delay isn't valid in this case because the time shifts differ.
 
 \begin{center}
 \begin{figure}
-\includegraphics[totalheight=8cm]{images/1_input_delay_example.png}
+\includegraphics[totalheight=6cm]{images/2_input_delay_example.png}
 \caption{Add figure caption}
 \label{fig:verticalcell}
 \end{figure}
@@ -43,10 +43,52 @@ Therefore, we propose a regression model which can handle stochastic time delay 
 
 \section{Methodology}
 
-...
+We consider the problem as analogous to the typical error-in-variables (EIV) regression. Ordinary regression analyses (and machine learning models) define the loss function with respect to errors in the y axis only. For EIV, errors are considered in both the $y$-axis and the $x$-axis (REF). This is useful when there are measurement errors in the independent variable eg. because your physical measurements have some degree of random error. Similarly, for this problem we assume that we have errors in the $y$-axis and the $t$-axis. That is, there are random prediction errors and random errors in the time domain. 
 
+Let $x: [a, b] \longrightarrow \mathbb{R}$ be a discrete time series with finite domain and we want to determine the injective, functional relationship $f$ to some other variable y. The series $x(t)$ must be a stationary series with a known value for the point at which $f(x(t)) = 0$.  That is, we know at which point the input series has no effect on the output (when it’s off). 
 
+% TODO: Rewrite concrete expression of support...is it on x ot t?
+\textcolor{red}{For clarity, as per convention, we use the nomenclature ‘support’ for the elements $f(x(t)) \neq 0$}. In addition, the series $x(t)$ should be sparse, in that it contains a low density of ‘non-zero’ coordinates. 
 
+We also assume that the set of $\tau$'s, denoted $\mathcal{T}$, is not a constant, but rather a random draw from some discrete distribution (e.g. discrete gaussian, poisson etc). For the discrete gaussian kernel $\mathcal{T}\sim T(0, \sigma)$ or for the poisson distribution $\mathcal{T}\sim Pois(\lambda)$ and $\varepsilon \sim N(0, \sigma_{\varepsilon})$. 
 
+Firstly, let us take the input series $x(t)$ and decompose it into its constituent non-zero impulse components. So, if $x(t)$ is a vector given by 
+
+\begin{align}
+x(t) = \left(0,0,1,0,1,0\right)
+\end{align}
+
+then we decompose the vector into a matrix 
+
+\begin{align}
+x(t) = 
+\left(
+\begin{array}{cccccc}
+0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 
+\end{array}  
+\right)
+\end{align}
+
+where each impulse is treated separately. \\
+
+Our algorithm then attempts to find the maximum likelihood estimate for the following equation:
+
+% TODO fix notation for T
+\begin{align}
+y(t)= f(X(t + T)) + \varepsilon
+\end{align}
+
+where $X(t + T)$ is the time shifted series and $X(t)$ is the observed input. \\
+
+In order to find the best estimate of f, we would like to find the function $f$ which maximises the joint likelihood of both Tau and e, the time-domain likelihood and the error likelihood respectively.
+
+Specifically, we maximise the log-likelihood of the following relation:
+% TODO: Clean this notation.
+\begin{align}
+\max  \left( \log \left(\mathcal{L}(\theta_{\varepsilon}, \varepsilon) \times \mathcal{L}(\theta_{\tau}, \tau)\right) \right)
+\end{align}
+
+where $\theta_{\varepsilon}$ and $\theta_{\tau}$ represent the parameters of the prediction error and time error respectively. For simplicity, assume that the tau and error distributions are independent. To begin with, the values of each individual time shift ($\tau$) are not known. In addition, the size of prediction error $\varepsilon$ can only be determined if each tau is known (because for each time shift there is a different prediction and prediction error). Therefore, our algorithm finds the best estimate of the individual time shifts in an inner optimisation, then iteratively searches for the best estimate of f in an outer optimisation step. \\
 
 \end{document}
