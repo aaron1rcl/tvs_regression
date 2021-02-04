@@ -34,6 +34,7 @@ class linearTVSRModel:
     shift_seq = None
     likelihood = None
     history = None
+    family = "gaussian"
 
     
     def __init__(self, verbose=False):
@@ -157,7 +158,7 @@ class linearTVSRModel:
                 dim_seg = dim_segs[j]
 
                 # Define our solver for the internal loop
-                f = linearTauSolver(X_seg, y_seg, A, tu, tsd, u, sd, C)
+                f = linearTauSolver(X_seg, y_seg, A, tu, tsd, u, sd, C, self.family)
                 
                 # Run inner optimisation loop
                 val, tau = self.inner_optimisation(dim_seg, f)
@@ -167,7 +168,7 @@ class linearTVSRModel:
                 taus = np.append(taus, tau)
         else:
             # Define the solver function
-            input_obj = linearTauSolver(np.copy(self.X), np.copy(self.y), A, tu, tsd, u, sd, C)
+            input_obj = linearTauSolver(np.copy(self.X), np.copy(self.y), A, tu, tsd, u, sd, C, self.family)
             # Run the inner optimisation.
             vals, taus = self.inner_optimisation(np.copy(self.X.shape), input_obj)
 
@@ -214,19 +215,26 @@ class linearTVSRModel:
             
     def inner_optimisation(self,  dim, f):
         # Run the inner optimisation algorithm and retrieve the max likelihood
-        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3)
+        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3, self.family)
 
         return val, tau
             
             
-    def fit(self, x_train, y_train, method="L-BFGS-B", split=True, max_t=None):
+    def fit(self, x_train, y_train, method="L-BFGS-B", split=True, max_t=None, family=None):
         
         # Define the setting
         self.split = split
         
+        # Set the family
+        if family is not None:
+            self.family = family
+        
         # Load the data into the object memory and decompose the vector
         self.x = x_train
         self.y = y_train
+        
+        # Run a standard linear regression first for comparison
+        self.basic_linear_regression()
         
         # Scale the input parameter space and save the transforms (makes optimisation easier)
         self.scale_inputs(max_t=max_t)
@@ -236,8 +244,7 @@ class linearTVSRModel:
         self.dimension = self.X.shape[0]
 
         
-        # Run a standard linear regression first
-        self.basic_linear_regression()
+
         
         # Assign bounds
         # Bounds can be fixed because the input space has been scaled
