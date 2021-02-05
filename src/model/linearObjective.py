@@ -5,7 +5,7 @@ import numpy as np
 class linearTauSolver:
     
     
-    def __init__(self, X, y, A, tu, tsd, u, sd, C):
+    def __init__(self, X, y, A, tu, tsd, u, sd, C, family):
         self.X = np.copy(X)
         self.y = np.copy(y)
         self.A = A
@@ -14,8 +14,8 @@ class linearTauSolver:
         self.u = u
         self.sd = sd
         self.C = C
+        self.family = family
         
-    
     
     
     def objective_function(self, shift_seq):
@@ -45,11 +45,14 @@ class linearTauSolver:
         e_l = src.log_likelihood(x=res, u=self.u, sd=self.sd)
         # Calculate the t axis log likelihood
         # The t Axis is a discrete parameter - using continuous likelihood leads to the parameter shrinkage
-        t_l = src.log_pmf_discrete(x=shift_seq, u=self.tu, sd=self.tsd)
+        t_l = src.log_pmf_discrete(x=shift_seq, u=self.tu, sd=self.tsd, family=self.family)
         
 
         # Want to get the maximum likelihood! Hence the negative multiplier
         return -(e_l + t_l)
+    
+
+
     
     
     def predict(self, shift_seq):

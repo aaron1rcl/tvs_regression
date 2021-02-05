@@ -1,9 +1,7 @@
 import numpy as np
-# Define the optimizer
 
 
-
-def tau_optimiser(init, f, max_iterations, max_dependency=4):
+def tau_optimiser(init, f, max_iterations, max_dependency, family):
   
     '''
     Optimizer for best Tau Selection
@@ -58,7 +56,12 @@ def tau_optimiser(init, f, max_iterations, max_dependency=4):
         # The random tau selection controlled by the tau sd given on line 30
         proposal = np.copy(init)
         for sel in selection:
-            flip = np.round(np.random.randn(1)*f.tsd)
+            if family == "gaussian":
+                flip = np.round(np.random.randn(1)*f.tsd)
+            elif family == "poisson":
+                flip = np.random.poisson(f.tsd)
+            else:
+                raise("Error: family not found")
             proposal[sel] = flip
         # Check whether the proposal is better than the initial
         

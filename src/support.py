@@ -1,8 +1,11 @@
 import numpy as np
 from scipy.stats import norm
 from scipy.stats import mode
-from scipy.special import iv
 import itertools
+
+# Import custom distributions
+from src.distributions import discrete_gaussian_kernel
+from src.distributions import discrete_poisson_kernel
 
 # Create the binomial input sequence
 def create_input(n, p = 0.1, binary=False):
@@ -80,7 +83,15 @@ def hor_mul(X, A):
         X[i,:] =  X[i,:] * A
     return X
 
+
 def log_likelihood(x, u, sd):
+    ''' Calculate continous PMF log likelihood 
+        Currently setup only for gaussian error
+        Inputs:
+            x: the individual observations
+            u: gaussian mean
+            sd: gaussian standard deviation
+    '''
     l = np.log(norm.pdf(x,loc=u, scale=sd))
     
     if np.all(np.isnan(l)):
@@ -90,12 +101,24 @@ def log_likelihood(x, u, sd):
 
     return np.sum(l)
 
-def log_pmf_discrete(x, u, sd):
+def log_pmf_discrete(x, u, sd, family="gaussian"):
+    ''' Calculate the discrete PMF log likelihood for given data points
+        Inputs:
+            x: individual observations
+            u: ** currently set to zero - need to generalise **
+            sd: standard deviation for gaussian, mu for poisson
+            family: either gaussian or poisson
+    '''
     x = np.array(x)
     # Centre the variable first by subtracting the mean (to make it mean zero)
     x = x - u
     # Get the log likelihood
-    l = np.log(discrete_gaussian_kernel(x, sd))
+    if family == "gaussian":
+        l = np.log(discrete_gaussian_kernel(x, sd))
+    elif family == "poisson":
+        l = np.log(discrete_poisson_kernel(x, sd))
+    else:
+        raise("Error: family not found")
     
     if np.all(np.isnan(l)):
         return -100
@@ -104,31 +127,10 @@ def log_pmf_discrete(x, u, sd):
     l = l[~np.isnan(l)]
     return np.sum(l)
 
-def linear_objective_fn(X, y, shift_seq, A, tu, tsd, u, sd):
-    
-    X = shift_array(X, shift_seq=shift_seq)
-    
-    # Multiply the array vectors by the A
-    for i in range(0, X.shape[0]):
-        X[i,:] =  X[i,:] * A
-    
-    # Create the prediction
-    y_p = np.sum(X, axis=0)
 
-    res = y - y_p
-    
-    e_l = log_likelihood(x=res, u=0, sd=1)
-    t_l = log_likelihood(x=shift_seq, u=0, sd=1)
-    
-    return e_l + t_l
     
 
-# Modified bessel function from wikipedia for discrete gaussian case
-def discrete_gaussian_kernel(x, sd):
-    try:
-        return np.exp(-sd) * iv(x, sd)
-    except:
-        return 1000
+# --- Segmentation Functions ------
 
 
 def refine_bounds(bounds, sd):
