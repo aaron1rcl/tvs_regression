@@ -7,6 +7,7 @@
 \usepackage[all]{xy}
 \usepackage{graphicx}
 \usepackage{xcolor}
+\usepackage{hyperref}
 
 \begin{document}
 
@@ -177,10 +178,69 @@ For example, consider the example sequence
 
 
 
-In cases such as these, the estimated likelihood is likely to be close to but not exactly the same as the real value. As the density (in time) of impulses increases, the accuracy of the estimates decrease. Therefore, this model is most appropriate for sparse time series inputs.
+In such cases, the estimated likelihood is likely to be close to but not exactly the same as the real value. As the density (in time) of impulses increases, the accuracy of the estimates decrease. Therefore, this model is most appropriate for sparse time series inputs.
 
 
 \section{Experiments}
+
+The following section demonstrates a simulated univariate example. Full code to reproduce the example can be found via \href{https://github.com/aaron1rcl/tvs_regression/}{TVS Regression on Github}.
+
+Figure 2. shows the simulated time series.
+
+The input signal has 17 non-zero impulses which have been drawn from the standard normal distribution. The system is 'off' when $x(t) =0$. In other words, when $x(t) = 0$, $f(x(t)) = 0$. 
+
+The true shift distribution $\mathcal{T}$ is given by $\mathcal{T}$ $~ N(0, 2)$. There is one value of $\tau$ for each of the 17 impulses.
+
+The green line represents the shifted series, corresponding to the time at which the effect occurs. The blue line is the output ‘y’.
+
+The values for the parameters were arbitrarily selected. The output y is defined by the following equation:
+
+
+\begin{align}
+    y = 2X(t + \mathcal{T}) + 6.5
+\end{align}
+
+
+\begin{center}
+\begin{figure}
+\includegraphics[totalheight=6cm]{images/simulated_example.png}
+\caption{Simulated Example Data}
+\label{fig:verticalcell}
+\end{figure}
+\end{center}
+
+A histogram of the actual distribution of $\mathcal{T}$ is shown in figure 3.
+
+\begin{center}
+\begin{figure}
+\includegraphics[totalheight=6cm]{images/real_shifts.png}
+\caption{Real Shift Distribution $\mathcal{T}$}
+\label{fig:verticalcell}
+\end{figure}
+\end{center}
+
+After fitting the model, we obtain the following results.
+Figures 4 and 5 show the model fit (denoted TVS) and a comparison with standard OLS. Figures 6 and 7 fit convergence and scatterplot respectively.
+
+\begin{center}
+\begin{figure}
+\includegraphics[totalheight=6cm]{images/tvs_fit.png}
+\caption{TVS Model Fit $\mathcal{T}$}
+\label{fig:verticalcell}
+\end{figure}
+\end{center}
+
+
+
+
+The true set of $\mathcal{T}$ is:
+
+
+
+Compared to the estimated $\mathcal{T}$:
+
+
+
 
 \section{Future Work}
 
