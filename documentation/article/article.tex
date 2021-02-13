@@ -47,8 +47,8 @@ We consider the problem as analogous to the typical error-in-variables (EIV) reg
 
 Let $x: [a, b] \longrightarrow \mathbb{R}$ be a discrete time series with finite domain and we want to determine the injective, functional relationship $f$ to some other variable y. The series $x(t)$ must be a stationary series with a known value for the point at which $f(x(t)) = 0$.  That is, we know at which point the input series has no effect on the output (when it’s off). 
 
-% TODO: Rewrite concrete expression of support...is it on x ot t?
-\textcolor{red}{For clarity, as per convention, we use the nomenclature ‘support’ for the elements $f(x(t)) \neq 0$}. In addition, the series $x(t)$ should be sparse, in that it contains a low density of ‘non-zero’ coordinates. 
+% TODO: Rewrite concrete expression of support...is it on x ot t? -- Aaron: f(x(t)). Consider x(t) = 0.1 for t is odd, 1 for t is even. If f(x(t)) = 0 for t is odd, 1 for t is even then the series is still valid for our method.  
+\textcolor{red}{For clarity, as per convention, we use the nomenclature ‘support’ for the elements $f(x(t)) \neq 0$}. The size of the support of f(x(t)) should be small relative to the total vector length. We utilise the terminology 'impulse' for an individual element of the support set.
 
 We also assume that the set of $\tau$'s, denoted $\mathcal{T}$, is not a constant, but rather a random draw from some discrete distribution (e.g. discrete gaussian, poisson etc). For the discrete gaussian kernel $\mathcal{T}\sim T(0, \sigma)$ or for the poisson distribution $\mathcal{T}\sim Pois(\lambda)$ and $\varepsilon \sim N(0, \sigma_{\varepsilon})$. 
 
@@ -98,15 +98,15 @@ where $\theta_{\varepsilon}$ and $\theta_{\tau}$ represent the parameters of the
 
 \section{Algorithm}
 
-Firstly, we define a parametric form and some initial parameters to be estimated for the function $f$. For example, let's take the simple univariate linear model where the $f(x(t))$ is parameterised by $\beta$, $\sigma_{\varepsilon}$(error standard deviation)  and $\sigma_{\tau}$ (time error standard deviation). First, we initialise some starting values for each of these parameters.
+Firstly, we define a parametric form and some initial parameters to be estimated for the function $f$. For simplicity, let's take the univariate linear model where the $f(x(t))$ is parameterised by $\beta$, $\sigma_{\varepsilon}$(error standard deviation)  and $\sigma_{\tau}$ (time error standard deviation). First, we initialise some starting values for each of these parameters.
 
-Now we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse and also gives the best possible prediction. In this example, we can get the prediction y by simply multiplying the shifted value by its parameter $\beta$. From there we can calculate the likelihood estimate for time shift plus the prediction error.
+Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse and also gives the best possible prediction. In this example, we can calculate the prediction 'y' by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
 
-In principle, we can then try a number of values of $\tau$ (i.e. optimise) until we maximise the likelihood for this impulse.
+In principle, we can iterate over a number of values of $\tau$ (i.e. optimise) until we maximise the likelihood for the specific impulse.
 
-However, we must also consider that the impulses in $X(t)$ are not independent from each other. After shifting, it's possible that two or more effects can occur simultaneously.
+However, we must also consider that the impulses in $X(t)$ are not independent from each other. After shifting, it's possible that two or more effects occur simultaneously.
 
-This could be particularly problematic if there are multiple impulses within a short period of time, or the impulses have a distributed effect over multiple time points. 
+This is particularly problematic if there are multiple impulses within a short period of time, or impulses have a distributed effect over multiple time points. 
 
 As an example consider the series 
 
@@ -141,20 +141,44 @@ y =
 \right)
 \end{align}
 
-We must consider the effects at the same time to accurately calculate the likelihood.
+To accurately calculate the likelihood, we must optimise the time shifts simultaneously.
 
-As shown above, if the impulses are not independent, then we need to consider time shifts $\tau$ at the same time. Therefore, we treat the problem of finding the best time shifts as a discrete optimisation problem.
+As shown above, if the impulses are not independent we need to optimise the time shifts $\tau$ simultaneously. Therefore, we treat the problem of finding the best set of time shifts as a discrete optimisation problem.
 
-For the optimisation step we utilise two assumptions to complete the optimisation. Firstly, smaller shifts are more likely than larger shifts (proportionate to the standard deviation of the T distribution). This means that we should explore the space of smaller shifts more often than larger shifts. Secondly, impulses close to each other are more likely to be dependent on each other,  than impulses further away. 
+For the optimisation step we utilise two assumptions. Firstly, smaller shifts are more likely than larger shifts (proportionate to the standard deviation of the T distribution). The algorithm should explore the space of smaller shifts more often than larger shifts. Secondly, impulses close to each other are more likely to be dependent than impulses further away. 
 
-Therefore, we initialize the optimisation algorithm with all parameters set to the mean of the T distribution (e.g. zero for the zero mean gaussian). Then we randomly select a small number of impulses, the exact number could be specified manually as a hyperparameter, or inferred from the data by looking at the density of impulses in time. These impulses are randomly changed to a value drawn for the T distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. If the proposal likelihood is higher than the current maximum likelihood, then we update our initial estimate to the current best guess. This procedure is done in a loop, with the best guess of the set of T improving over time.
+Therefore, we initialize the optimisation algorithm with all parameters set to the mean of the T distribution (e.g. zero for the zero mean gaussian). Next, we randomly select a small number of impulses, with the value treated as a hyperparameter. The impulses are then randomly changed to a value drawn for the T distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. If the proposal likelihood is higher than the current maximum likelihood, we update our initial estimate to the current best guess. This procedure is done in a loop with the best guess of the set of T improving over time.
 
-Lastly, we optimise over the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation, typical methods can be used such as gradient descent, genetic algorithms or annealing.  In our implementation we have used the differential evolution algorithm from the scipiy.optimize library (REF) in python, due to its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range 0-1.
+Lastly, we optimise over the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation, typical methods such as gradient descent, genetic algorithms or annealing can be used.  In our implementation we have used the differential evolution algorithm from scipiy.optimize (REF), because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range 0-1.
 
 Through optimisation, we find the best fit for the values of $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $\beta X(t)$. As $\sigma_{\varepsilon}/(\beta X(t))$ tends to infinity, the estimated value of $\sigma_{\tau}$ tends to zero. In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
-On the other hand as $\sigma_{\varepsilon}/(\beta X(t))$ tends to zero, the estimated value of B(?) tends to the true value. Therefore, the method provides no guarantee on recovering the exact time shifts, instead only that we obtain an estimate equal to or better than standard regression.
+On the other hand as $\sigma_{\varepsilon}/(\beta X(t))$ tends to zero, the coefficient estimate tends to the true value. Therefore, the method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
 
 \section{Limitations}
+
+As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $ith$ and $jth$ impulse (row) in $X(t)$, separated by time $t$, the effect vectors $f(Xi*(t + tau_i))$ and $f(Xj*(t + tau_j))$ are linearly independent.
+
+Therefore, the matrix $X(t)$ is decomposed into a number of segments, where each segment is 
+composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest density of impulses. Assuming that we wish to split $X(t)$ into independent matrices $Un*(t)$ and $Vm*(t)$, if we choose the split locations such that $\forall_i \epsilon n and  \forall_j \epsilon_ m$, $f(Ui*(t + tau_i))$ is linearly independent from $f(Vj*(t + tau_j))$, then segments will also be independent and the procedure unique. In practice, it may not be possible to guarantee complete independence of every segment, in which case the results will vary. After segmentation, each matrix can be optimised independently, in parallel, making the inner optimisation procedure tractable for longer length sequences. 
+
+Finally, a note on problem constraints. The likelihood estimates are dependent on the inner ($T$) optimisation procedure. There is no guarantee that the global maximum will be found during this process, particularly for sequences with a high density of impulses. 
+
+For example, consider the example sequence 
+
+\begin{align}
+    x(t) = 
+    \left(
+\begin{array}{cccccccccc}
+    0.5 & 0.6 & 0.4 & 1 & 2 & 1 &
+    0.3 & 0.2 & 0.5 & 0.8 
+\end{array}  
+\right)
+\end{align}
+
+
+
+In cases such as these, the estimated likelihood is likely to be close to but not exactly the same as the real value. As the density (in time) of impulses increases, the accuracy of the estimates decrease. Therefore, this model is most appropriate for sparse time series inputs.
+
 
 \section{Experiments}
 
@@ -162,7 +186,7 @@ On the other hand as $\sigma_{\varepsilon}/(\beta X(t))$ tends to zero, the esti
 
 \section{Conclusion}
 
-We have proposed a form of regression analysis for dealing with stochastic time delay problems. We have shown the feasibility of the approach and its performance on simulated data. The approach allows for better estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.
+We have proposed a form of regression analysis for handling stochastic time delay problems. We have shown the feasibility of the approach and its performance on simulated data. The approach allows for better estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.
 
 
 \end{document}
