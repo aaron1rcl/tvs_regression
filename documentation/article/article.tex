@@ -81,7 +81,7 @@ Our algorithm then attempts to find the maximum likelihood estimate for the foll
 
 % TODO fix notation for T
 \begin{align}
-y(t)= f(X(t + T)) + \varepsilon
+y(t)= f(X(t + \mathcal{T})) + \varepsilon
 \end{align}
 
 where $X(t + T)$ is the time shifted series and $X(t)$ is the observed input.\\
@@ -94,7 +94,7 @@ Specifically, we maximise the log-likelihood of the following relation:
 \max  \left( \log \left(\mathcal{L}(\theta_{\varepsilon}, \varepsilon) \times \mathcal{L}(\theta_{\tau}, \tau)\right) \right)
 \end{align}
 
-where $\theta_{\varepsilon}$ and $\theta_{\tau}$ represent the parameters of the prediction error and time error respectively. For simplicity, assume that the tau and error distributions are independent. To begin with, the values of each individual time shift ($\tau$) are not known. In addition, the size of prediction error $\varepsilon$ can only be determined if each tau is known (because for each time shift there is a different prediction and prediction error). Therefore, our algorithm finds the best estimate of the individual time shifts in an inner optimisation, then iteratively searches for the best estimate of $f$ in an outer optimisation step. 
+where $\theta_{\varepsilon}$ and $\theta_{\tau}$ represent the parameters of the prediction error and time error respectively. For simplicity, assume that the tau and error distributions are independent. To begin with, the values of each individual time shift ($\tau$) are not known. In addition, prediction error distribution $\varepsilon$ can only be determined if each $\tau$ is known (because for each time shift there is a different prediction and prediction error). Therefore, our algorithm finds the optimum set of time shifts  in an inner optimisation, while iteratively searching for the optimum parameters of $f$ in an outer optimisation step. 
 
 \section{Algorithm}
 
@@ -119,10 +119,10 @@ x(t) =
 \right)
 \end{align}
 
-with $T= (1, 0)$ and $\beta = 1$. For this case, 
+with $\mathcal{T}= (1, 0)$ and $\beta = 1$. For this case, 
 
 \begin{align}
-X(t + T) = 
+X(t + \mathcal{T}) = 
 \left(
 \begin{array}{cccccc}
 0 & 0 & 1 & 0 & 0 & 0 \\
@@ -143,11 +143,11 @@ y =
 
 To accurately calculate the likelihood, we must optimise the time shifts simultaneously.
 
-As shown above, if the impulses are not independent we need to optimise the time shifts $\tau$ simultaneously. Therefore, we treat the problem of finding the best set of time shifts as a discrete optimisation problem.
+Therefore, we treat the problem of finding the best set of time shifts as a discrete optimisation problem.
 
-For the optimisation step we utilise two assumptions. Firstly, smaller shifts are more likely than larger shifts (proportionate to the standard deviation of the T distribution). The algorithm should explore the space of smaller shifts more often than larger shifts. Secondly, impulses close to each other are more likely to be dependent than impulses further away. 
+For the optimisation step we utilise two assumptions. Firstly, smaller shifts are more likely than larger shifts (proportionate to the standard deviation of the $\mathcal{T}$ distribution). The algorithm should explore the space of smaller shifts more often than larger shifts. Secondly, impulses close to each other are more likely to be dependent than impulses further away. 
 
-Therefore, we initialize the optimisation algorithm with all parameters set to the mean of the T distribution (e.g. zero for the zero mean gaussian). Next, we randomly select a small number of impulses, with the value treated as a hyperparameter. The impulses are then randomly changed to a value drawn for the T distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. If the proposal likelihood is higher than the current maximum likelihood, we update our initial estimate to the current best guess. This procedure is done in a loop with the best guess of the set of T improving over time.
+We initialize the optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution (e.g. zero for the zero mean gaussian). Next, we randomly select a small number of impulses, with the value treated as a hyperparameter. The shifts are then randomly changed to a value drawn for the T distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. If the proposal likelihood is higher than the current maximum likelihood, we update our initial estimate to the current best guess. This procedure is done in a loop with the best guess of the set of T improving over time.
 
 Lastly, we optimise over the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation, typical methods such as gradient descent, genetic algorithms or annealing can be used.  In our implementation we have used the differential evolution algorithm from scipiy.optimize (REF), because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range 0-1.
 
@@ -155,13 +155,13 @@ Through optimisation, we find the best fit for the values of $\beta$, $\sigma_{\
 On the other hand as $\sigma_{\varepsilon}/(\beta X(t))$ tends to zero, the coefficient estimate tends to the true value. Therefore, the method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
 
 \section{Limitations}
-
+%TO-DO : Improve the formulas
 As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $ith$ and $jth$ impulse (row) in $X(t)$, separated by time $t$, the effect vectors $f(Xi*(t + tau_i))$ and $f(Xj*(t + tau_j))$ are linearly independent.
 
 Therefore, the matrix $X(t)$ is decomposed into a number of segments, where each segment is 
-composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest density of impulses. Assuming that we wish to split $X(t)$ into independent matrices $Un*(t)$ and $Vm*(t)$, if we choose the split locations such that $\forall_i \epsilon n and  \forall_j \epsilon_ m$, $f(Ui*(t + tau_i))$ is linearly independent from $f(Vj*(t + tau_j))$, then segments will also be independent and the procedure unique. In practice, it may not be possible to guarantee complete independence of every segment, in which case the results will vary. After segmentation, each matrix can be optimised independently, in parallel, making the inner optimisation procedure tractable for longer length sequences. 
+composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest density of impulses. Assuming that we wish to split $X(t)$ into independent matrices $Un*(t)$ and $Vm*(t)$, if we choose the split locations such that $\forall_i \epsilon n and  \forall_j \epsilon_ m$, $f(Ui*(t + tau_i))$ is linearly independent from $f(Vj*(t + tau_j))$, then segments will also be independent and the procedure unique. In practice, it may not be possible to guarantee complete independence of every segment, in which case results will vary. After segmentation, each matrix can be optimised independently, in parallel, making the inner optimisation procedure tractable for longer length sequences. 
 
-Finally, a note on problem constraints. The likelihood estimates are dependent on the inner ($T$) optimisation procedure. There is no guarantee that the global maximum will be found during this process, particularly for sequences with a high density of impulses. 
+Finally, a note on problem constraints. The likelihood estimates are dependent on the inner ($\mathcal{T}$) optimisation procedure. There is no guarantee that the global maximum will be found during this process, particularly for sequences with a high density of impulses. 
 
 For example, consider the example sequence 
 
