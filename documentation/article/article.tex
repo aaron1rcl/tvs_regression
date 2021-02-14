@@ -8,6 +8,7 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{tabularx}
 
 \begin{document}
 
@@ -157,10 +158,16 @@ On the other hand as $\sigma_{\varepsilon}/(\beta X(t))$ tends to zero, the coef
 
 \section{Limitations}
 %TO-DO : Improve the formulas
-As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $ith$ and $jth$ impulse (row) in $X(t)$, separated by time $t$, the effect vectors $f(Xi*(t + tau_i))$ and $f(Xj*(t + tau_j))$ are linearly independent.
+As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $ith$ and $j_th$ impulse (row) in $X(t)$, separated by time $t$, the effect vectors $f(X_i(t + \tau_i))$ and $f(X_j(t + \tau_j))$ are linearly independent.
 
 Therefore, the matrix $X(t)$ is decomposed into a number of segments, where each segment is 
-composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest density of impulses. Assuming that we wish to split $X(t)$ into independent matrices $Un*(t)$ and $Vm*(t)$, if we choose the split locations such that $\forall_i \epsilon n and  \forall_j \epsilon_ m$, $f(Ui*(t + tau_i))$ is linearly independent from $f(Vj*(t + tau_j))$, then segments will also be independent and the procedure unique. In practice, it may not be possible to guarantee complete independence of every segment, in which case results will vary. After segmentation, each matrix can be optimised independently, in parallel, making the inner optimisation procedure tractable for longer length sequences. 
+composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest impulse density. Given that we wish to split $X(t)$ into independent matrices $U_n(t)$ and $V_m(t)$, 
+if we choose the split locations such that $\forall_i$ $\epsilon$ $n$ and  $\forall_j$ $\epsilon$ $m$, 
+$f(U_i(t + \tau_i))$ is linearly independent from $f(V_j(t + \tau_j))$, 
+then segments will also be independent and the procedure unique. 
+In practice, it may not be possible to guarantee complete independence of every segment, 
+in which case results may vary. After segmentation, each matrix can be optimised independently, 
+in parallel, making the inner optimisation procedure tractable for longer length sequences. 
 
 Finally, a note on problem constraints. The likelihood estimates are dependent on the inner ($\mathcal{T}$) optimisation procedure. There is no guarantee that the global maximum will be found during this process, particularly for sequences with a high density of impulses. 
 
@@ -176,12 +183,10 @@ For example, consider the example sequence
 \right)
 \end{align}
 
-
-
+where each impulse can shift between -2 and +2 positions. Ignoring shifts beyond the edge of the vector, the solutions space of $\mathcal{T}$ is $5^t$ combinations.  
 In such cases, the estimated likelihood is likely to be close to but not exactly the same as the real value. As the density (in time) of impulses increases, the accuracy of the estimates decrease. Therefore, this model is most appropriate for sparse time series inputs.
 
-
-\section{Experiments}
+\section{Experiment}
 
 The following section demonstrates a simulated univariate example. Full code to reproduce the example can be found via \href{https://github.com/aaron1rcl/tvs_regression/}{TVS Regression on Github}.
 
@@ -235,18 +240,64 @@ Figures 4 and 5 show the model fit (denoted TVS) and a comparison with standard 
 
 The true set of $\mathcal{T}$ is:
 
-
+\begin{align}
+    \mathcal{T} = 
+    \left(
+    \begin{array}{ccc}
+    -1 & 1 & 0 
+    \end{array}  
+    \right)
+    \end{align}
 
 Compared to the estimated $\mathcal{T}$:
 
+\begin{align}
+    \mathcal{T}_{est} = 
+    \left(
+    \begin{array}{ccc}
+    -1 & 1 & 0 
+    \end{array}  
+    \right)
+    \end{align}
 
+%To-do - write in the actual T distributions above. Not sure how to fix the hbox problem.
+
+
+%To-do properly format the table
+\begin{tabular}{c|c|c|c|}
+\hline
+Parameter & TVS Regression & OLS Regression & True Value \\
+\hline
+$\beta$ & 1.96 & 0.26 & 2  \\
+\hline
+$Intercept$ & 6.48 & 6.62 & 6.5 \\
+\hline
+$\sigma_t$ & 1.51 & $N/A$ & 1.47 \\
+\hline
+$\sigma_e$ & 0.26 & 1.03 & 0.2 \\
+\end{tabular}
+
+As shown above, the estimated values for $\beta$ and $\sigma_e$ are significantly improved by taking into account the stochastic time delay noise. The estimated $\beta$ using OLS regression is 0.25, compared to the true value 2. Even a small amount of noise in the time axis causes attenuation, 
+limiting the usefulness of OLS for these problems.
+In comparison, the algorithm described herein estimates a $\beta$ of 1.96, much closer to the true value.
+
+While the example is based on simulated data, we believe that the experiment demonstrates clear potential for improvement in the modelling of real world systems with stochastic time delay noise.
 
 
 \section{Future Work}
 
+In the univariate case, the utility of the described method is limited. However, we propose three extensions as future work. The first is to extend the method to multivariate regression. We believe that the extension can be built on the same fundamental ideas presented in this document. Next, the model could be extended to include distributed lag structures. A distributed lag structure is where past values of the impulse influence future values of the output. Finally, in relating $x(t)$ to $f(x(t))$, the function f could be extended to the modelling of non-linear forms.
+
+Through these extensions we can begin to tackle a larger number of practical problems.
+
+In addition, by incorporating these elements we could begin to explore alternative forms of time series prediction. Essentially, existing prediction mechanisms predict the average across time shifts. In some situations, the predictions resulting from these models could be considered nonsensical.
+
+For example, let us consider a regression model to predict how much coffee someone drinks between 9am and 9:30am, at work. They set off every day in their car at exactly 8:30am and it takes about 30 minutes (+- $\tau$) to get to work. The time shift $\tau$ could be caused by something as simple as variations in traffic. When they get to work, they always have a coffee. A typical regression might predict $0.5$ coffees between 8:30 am and 9am and $0.5$ coffees between 9am and 9:30am. Alternative prediction forms such as: 'When they get to work, they will have 1 coffee' might be more useful.
+
+
 \section{Conclusion}
 
-We have proposed a form of regression analysis for handling stochastic time delay problems. We have shown the feasibility of the approach and its performance on simulated data. The approach allows for better estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.
+We have proposed a form of regression analysis suited to the modelling of stochastic time delay problems. In addition, we have shown the feasibility of the approach and its performance on simulated data. Our approach allows for consistently improved estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.
 
 
 \end{document}
