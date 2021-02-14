@@ -188,9 +188,9 @@ In such cases, the estimated likelihood is likely to be close to but not exactly
 
 \section{Experiment}
 
-The following section demonstrates a simulated univariate example. Full code to reproduce the example can be found via \href{https://github.com/aaron1rcl/tvs_regression/}{TVS Regression on Github}.
+The following section demonstrates a simulated univariate example. Full code to reproduce the example can be found via \href{https://github.com/aaron1rcl/tvs_regression/}{TVS Regression on GitHub}.
 
-Figure 2. shows the simulated time series.
+Figure \ref{fig:simulated_example} shows the simulated time series.
 
 The input signal has 17 non-zero impulses which have been drawn from the standard normal distribution. The system is 'off' when $x(t) =0$. In other words, when $x(t) = 0$, $f(x(t)) = 0$. 
 
@@ -208,57 +208,71 @@ The values for the parameters were arbitrarily selected. The output y is defined
 
 \begin{center}
 \begin{figure}
-\includegraphics[totalheight=6cm]{images/simulated_example.png}
+\includegraphics[scale=0.5]{images/simulated_example.png}
 \caption{Simulated Example Data}
-\label{fig:verticalcell}
+\label{fig:simulated_example}
 \end{figure}
 \end{center}
 
-A histogram of the actual distribution of $\mathcal{T}$ is shown in figure 3.
+A histogram of the actual distribution of $\mathcal{T}$ is shown in Figure \ref{fig:real_shifts}.
 
 \begin{center}
 \begin{figure}
-\includegraphics[totalheight=6cm]{images/real_shifts.png}
-\caption{Real Shift Distribution $\mathcal{T}$}
-\label{fig:verticalcell}
+\includegraphics[scale=0.5]{images/real_shifts.png}
+\caption{Real Shift Distribution $\mathcal{T}$.}
+\label{fig:real_shifts}
 \end{figure}
 \end{center}
 
-After fitting the model, we obtain the following results.
-Figures 4 and 5 show the model fit (denoted TVS) and a comparison with standard OLS. Figures 6 and 7 fit convergence and scatterplot respectively.
+After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ols_fit} show the model fit (denoted TVS) and a comparison with standard OLS. Figure \ref{fig:tvs_errors} and Figure \ref{fig:convergence} show the errors distribution of the TVS fit and  convergence of the TVS model respectively.
 
 \begin{center}
 \begin{figure}
-\includegraphics[totalheight=6cm]{images/tvs_fit.png}
-\caption{TVS Model Fit $\mathcal{T}$}
-\label{fig:verticalcell}
+\includegraphics[scale=0.6]{images/tvs_fit.png} 
+\includegraphics[scale=0.3]{images/ols_fit.png} 
+\includegraphics[scale=0.3]{images/scatterplot.png} 
+\caption{TVS vs OLS model fit.}
+\label{fig:tvs_ols_fit}
 \end{figure}
 \end{center}
 
+\begin{center}
+\begin{figure}
+\includegraphics[scale=0.5]{images/tvs_errors.png}
+\caption{Errors...}
+\label{fig:tvs_errors}
+\end{figure}
+\end{center}
 
-
+\begin{center}
+\begin{figure}
+\includegraphics[scale=0.6]{images/convergence.png} 
+\caption{Convergence ...}
+\label{fig:convergence}
+\end{figure}
+\end{center}
 
 The true set of $\mathcal{T}$ is:
 
 \begin{align}
-    \mathcal{T} = 
-    \left(
-    \begin{array}{ccc}
-    -1 & 1 & 0 
-    \end{array}  
-    \right)
-    \end{align}
+\mathcal{T} = 
+\left(
+\begin{array}{ccc}
+-1 & 1 & 0 
+\end{array}  
+\right)
+\end{align}
 
 Compared to the estimated $\mathcal{T}$:
 
 \begin{align}
-    \mathcal{T}_{est} = 
-    \left(
-    \begin{array}{ccc}
-    -1 & 1 & 0 
-    \end{array}  
-    \right)
-    \end{align}
+\mathcal{T}_{est} = 
+\left(
+\begin{array}{ccc}
+-1 & 1 & 0 
+\end{array}  
+\right)
+\end{align}
 
 %To-do - write in the actual T distributions above. Not sure how to fix the hbox problem.
 
