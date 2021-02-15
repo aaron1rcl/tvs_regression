@@ -83,23 +83,24 @@ Our algorithm then attempts to find the maximum likelihood estimate for the foll
 
 % TODO fix notation for T
 \begin{align}
-y(t)= f(X(t + \mathcal{T})) + \varepsilon
+y(t)= f(1^TX(t + \mathcal{T})) + \varepsilon
 \end{align}
 
-where $X(t + \mathcal{T})$ is the matrix of time shifted impulses and $X(t)$ is the observed input.\\
+where $X(t + \mathcal{T})$ is the matrix of time shifted impulses, $X(t)$ is the observed input and 1 is the vector (1,1,1...1).\\
 
-In order to find the best estimate of $f$, we would like to find the function $f$ which maximises the joint likelihood of both Tau(?) and $\varepsilon$, the time-domain likelihood and the error likelihood respectively.
+In order to find the best estimate of $f$, we would like to find the function $f$ which maximises the joint likelihood of the time-domain shifts and the prediction error likelihood.
 
-Specifically, we maximise the log-likelihood of the following relation:
+Specifically, we maximise:
 % TODO: Clean this notation.
 \begin{align}
-\max  \left( \log \left(\mathcal{L}(\theta_{\varepsilon}, \varepsilon) \times \mathcal{L}(\theta_{\tau}, \tau)\right) \right)
+    \sum_{i=1}^{n} \log(p(y_i | X = x_i; \theta_{\varepsilon}, \tau_i)) + \sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))
 \end{align}
 
-where $\theta_{\varepsilon}$ and $\theta_{\tau}$ represent the parameters of the prediction error and time error respectively. For simplicity, assume that the tau and error distributions are independent. To begin with, the values of each individual time shift ($\tau$) are not known. In addition, prediction error distribution $\varepsilon$ can only be determined if each $\tau$ is known (because for each time shift there is a different prediction and prediction error). Therefore, our algorithm finds the optimum set of time shifts  in an inner optimisation, while iteratively searching for the optimum parameters of $f$ in an outer optimisation step. 
+where $\theta_{\varepsilon}$ and $\theta_{\tau}$ represent the parameters of the prediction error and time error respectively. For simplicity, we assume that the time shift ($\mathcal{T}$) and error ($\varepsilon$) distributions are independent. 
 
 \section{Algorithm}
 
+Before optimisation, the values of each individual time shift ($\tau$) are not known. In addition, the prediction errors $\varepsilon$ can only be calculated if each value of $\tau$ is available (because for each time shift there is a different prediction and hence prediction error). Therefore, our algorithm finds the optimum set of time shifts in an inner optimisation, while iteratively searching for the optimum parameters of $f$ in an outer optimisation. 
 Firstly, we define a parametric form and some initial parameters to be estimated for the function $f$. For simplicity, let's take the univariate linear model where the $f(x(t))$ is parameterised by $\beta$, $\sigma_{\varepsilon}$(error standard deviation)  and $\sigma_{\tau}$ (time error standard deviation). First, we initialise some starting values for each of these parameters.
 
 Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse and also gives the best possible prediction. In this example, we can calculate the prediction 'y' by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
@@ -202,7 +203,7 @@ The values for the parameters were arbitrarily selected. The output y is defined
 
 
 \begin{align}
-    y = 2X(t + \mathcal{T}) + 6.5
+    y = 2(1^TX(t + \mathcal{T})) + 6.5
 \end{align}
 
 
