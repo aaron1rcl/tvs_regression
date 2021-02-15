@@ -52,7 +52,7 @@ Let $x: [a, b] \longrightarrow \mathbb{R}$ be a discrete time series with finite
 % TODO: Rewrite concrete expression of support...is it on x ot t? -- Aaron: f(x(t)). Consider x(t) = 0.1 for t is odd, 1 for t is even. If f(x(t)) = 0 for t is odd, 1 for t is even then the series is still valid for our method.  
 \textcolor{red}{For clarity, as per convention, we use the nomenclature ‘support’ for the elements $f(x(t)) \neq 0$}. The size of the support of f(x(t)) should be small relative to the total vector length. We utilise the terminology 'impulse' for an individual element of the support set.
 
-We also assume that the set of $\tau$'s, denoted $\mathcal{T}$, is not a constant, but rather a random draw from some discrete distribution (e.g. discrete gaussian, poisson etc). For the discrete gaussian kernel $\mathcal{T}\sim T(0, \sigma)$ or for the poisson distribution $\mathcal{T}\sim Pois(\lambda)$ and $\varepsilon \sim N(0, \sigma_{\varepsilon})$. 
+We also assume that the set of $\tau$'s, denoted $\mathcal{T}$, is not a constant, but rather a random draw from some discrete distribution (e.g. discrete gaussian, poisson etc). For the discrete gaussian kernel $\mathcal{T}\sim T(\mu, \sigma)$ or for the poisson distribution $\mathcal{T}\sim Pois(\lambda)$ and $\varepsilon \sim N(\mu, \sigma_{\varepsilon})$. 
 
 Firstly, let us take the input series $x(t)$ and decompose it into its constituent non-zero impulse components. So, if $x(t)$ is a vector given by 
 
@@ -86,17 +86,17 @@ Our algorithm then attempts to find the maximum likelihood estimate for the foll
 y(t)= f(1^TX(t + \mathcal{T})) + \varepsilon
 \end{align}
 
-where $X(t + \mathcal{T})$ is the matrix of time shifted impulses, $X(t)$ is the observed input and 1 is the vector (1,1,1...1).\\
+where $X(t + \mathcal{T})$ is the matrix of time shifted impulses, $X(t)$ is the observed input and 1 is a vector (1,1,1...1).\\
 
-In order to find the best estimate of $f$, we would like to find the function $f$ which maximises the joint likelihood of the time-domain shifts and the prediction error likelihood.
+In order to find the best estimate of $f$, we would like to find the function $f$ which maximises the joint likelihood of the time-domain shifts and the prediction residuals.
 
 Specifically, we maximise:
 % TODO: Clean this notation.
 \begin{align}
-    \sum_{i=1}^{n} \log(p(y_i | X = x_i; \theta_{\varepsilon}, \tau_i)) + \sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))
+    \sum_{i=1}^{n} \log(p(y_i | X_{\tau i} = x_i; \theta_{\mathcal{f}}, \tau_i)) + \sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))
 \end{align}
 
-where $\theta_{\varepsilon}$ and $\theta_{\tau}$ represent the parameters of the prediction error and time error respectively. For simplicity, we assume that the time shift ($\mathcal{T}$) and error ($\varepsilon$) distributions are independent. 
+where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the model $f$ and time shifts $\mathcal{T}$. For simplicity, we assume that the time shift distribution and error distributions are independent. 
 
 \section{Algorithm}
 
@@ -105,7 +105,7 @@ Firstly, we define a parametric form and some initial parameters to be estimated
 
 Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse and also gives the best possible prediction. In this example, we can calculate the prediction 'y' by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
 
-In principle, we can iterate over a number of values of $\tau$ (i.e. optimise) until we maximise the likelihood for the specific impulse.
+Finally, we iterate over a number of values of $\tau$ optimising until we maximise the likelihood for the specific impulse.
 
 However, we must also consider that the impulses in $X(t)$ are not independent from each other. After shifting, it's possible that two or more effects occur simultaneously.
 
@@ -154,11 +154,10 @@ We initialize the optimisation algorithm with all parameters set to the mean of 
 
 Lastly, we optimise over the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation, typical methods such as gradient descent, genetic algorithms or annealing can be used.  In our implementation we have used the differential evolution algorithm from scipiy.optimize (REF), because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range 0-1.
 
-Through optimisation, we find the best fit for the values of $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $\beta X(t)$. As $\sigma_{\varepsilon}/(\beta X(t))$ tends to infinity, the estimated value of $\sigma_{\tau}$ tends to zero. In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
-On the other hand as $\sigma_{\varepsilon}/(\beta X(t))$ tends to zero, the coefficient estimate tends to the true value. Therefore, the method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
+Through optimisation, we find the best fit for the values of $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. As $\sigma_{\varepsilon}/f(x(t))$ $\rightarrow$ $\infty$, $\sigma_{\tau}$ $\rightarrow$ $0$. In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
+On the other hand as $\sigma_{\varepsilon}/f(x(t))$ tends to zero, $\beta x(t)$ $\rightarrow f(x(t))$. The method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
 
 \section{Limitations}
-%TO-DO : Improve the formulas
 As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $ith$ and $j_th$ impulse (row) in $X(t)$, separated by time $t$, the effect vectors $f(X_i(t + \tau_i))$ and $f(X_j(t + \tau_j))$ are linearly independent.
 
 Therefore, the matrix $X(t)$ is decomposed into a number of segments, where each segment is 
