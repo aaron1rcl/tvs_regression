@@ -28,7 +28,7 @@ As an example, let us take the management of blood sugar level in diabetes patie
 
 Inference for this type of problem is especially challenging. Typical regression models require a fixed alignment between cause and effect. Using standard methods, we'd need to assume that the effect occurs after some fixed time $t$ which can be inferred from the data. However, if there is any uncertainty in the parameter $t$ ($t$ changes or is noisy) the resulting estimates will be significantly attenuated.
 
-Consider the simple example where the effect of the input is $1$, as shown in the image below. The observed input is given by the red line, the blue line is when the effect actually occurs. The first effect happens one time point after the input. The second effect happens at the same time as the input. A fixed time delay isn't valid in this case because the time shifts differ.
+Consider the simple example in Figure 1 where the effect of the input is $1$. The observed input is given by the red line, the blue line is when the effect actually occurs. The first effect happens one time point after the input. The second effect happens at the same time as the input. A fixed time delay isn't valid in this case because the time shifts differ.
 
 \begin{center}
 \begin{figure}
@@ -38,7 +38,7 @@ Consider the simple example where the effect of the input is $1$, as shown in th
 \end{figure}
 \end{center}
 
-If one were to model the effect using a fixed time delay and OLS, the estimate would only be half the true value because only one of the outputs is aligned. Obviously, this isn't ideal, we want the parameter estimates to be as close to the real values as possible, regardless of any noise in the lag structures. One can mitigate the problem via time aggregations, however in complicated multivariate cases, this is just not feasible.
+If one were to model the effect using a fixed time delay and OLS, the estimate would only be half the true value because only one of the outputs is aligned. Obviously, this isn't ideal, we want the parameter estimates to be as close to the real values as possible, regardless of any noise in the lag structures. One can mitigate the problem via time aggregations, however in complicated cases with multiple factors, this is just not feasible.
 
 Therefore, we propose a regression model which can handle stochastic time delay structures. We treat the stochastic time delay components as an ‘error’ in the time axis. Next, we find the maximum likelihood estimate, for a given set of parameters, considering the time error ($t$-axis) and the regression error ($y$-axis) simultaneously.
 
@@ -79,14 +79,14 @@ X(t) =
 
 where each impulse is treated separately. \\
 
-Our algorithm then attempts to find the maximum likelihood estimate for the following equation:
+We then model:
 
 % TODO fix notation for T
 \begin{align}
 y(t)= f(1^TX(t + \mathcal{T})) + \varepsilon
 \end{align}
 
-where $X(t + \mathcal{T})$ is the matrix of time shifted impulses, $X(t)$ is the observed input and 1 is a vector (1,1,1...1).\\
+where $X(t + \mathcal{T})$ is the matrix of time shifted impulses, $X(t)$ is the observed input, $1$ is the vector $(1,1,1...1)$ and $\epsilon$ is a noise term.\\
 
 In order to find the best estimate of $f$, we would like to find the function $f$ which maximises the joint likelihood of the time-domain shifts and the prediction residuals.
 
@@ -96,11 +96,11 @@ Specifically, we maximise:
     \sum_{i=1}^{n} \log(p(y_i | X_{\tau i} = x_i; \theta_{\mathcal{f}}, \tau_i)) + \sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))
 \end{align}
 
-where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the model $f$ and time shifts $\mathcal{T}$. For simplicity, we assume that the time shift distribution and error distributions are independent. 
+where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the model $f$ and time shifts $\mathcal{T}$ respectively. For simplicity, we assume that the time shift distribution and error distributions are independent. 
 
 \section{Algorithm}
 
-Before optimisation, the values of each individual time shift ($\tau$) are not known. In addition, the prediction errors $\varepsilon$ can only be calculated if each value of $\tau$ is available (because for each time shift there is a different prediction and hence prediction error). Therefore, our algorithm finds the optimum set of time shifts in an inner optimisation, while iteratively searching for the optimum parameters of $f$ in an outer optimisation. 
+Before optimisation, the values of each individual time shift ($\tau$) are not known. In addition, the prediction errors $\varepsilon$ can only be calculated if each value of $\tau$ is available (because for each time shift there is a different prediction and hence prediction error). Therefore, our algorithm finds the optimum set of time shifts in an inner optimisation, while iteratively searching for the optimum parameters of $f$ in an outer optimisation loop. 
 Firstly, we define a parametric form and some initial parameters to be estimated for the function $f$. For simplicity, let's take the univariate linear model where the $f(x(t))$ is parameterised by $\beta$, $\sigma_{\varepsilon}$(error standard deviation)  and $\sigma_{\tau}$ (time error standard deviation). First, we initialise some starting values for each of these parameters.
 
 Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse and also gives the best possible prediction. In this example, we can calculate the prediction 'y' by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
@@ -150,15 +150,15 @@ Therefore, we treat the problem of finding the best set of time shifts as a disc
 
 For the optimisation step we utilise two assumptions. Firstly, smaller shifts are more likely than larger shifts (proportionate to the standard deviation of the $\mathcal{T}$ distribution). The algorithm should explore the space of smaller shifts more often than larger shifts. Secondly, impulses close to each other are more likely to be dependent than impulses further away. 
 
-We initialize the optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution (e.g. zero for the zero mean gaussian). Next, we randomly select a small number of impulses, with the value treated as a hyperparameter. The shifts are then randomly changed to a value drawn for the T distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. If the proposal likelihood is higher than the current maximum likelihood, we update our initial estimate to the current best guess. This procedure is done in a loop with the best guess of the set of T improving over time.
+We initialize the optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution (e.g. zero for the zero mean gaussian). Next, we randomly select a small number of impulses, with the value treated as a hyperparameter. The shifts are then randomly changed to a value drawn for the T distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. If the proposal likelihood is higher than the current maximum likelihood, we update our estimate. This procedure is done in a loop with the best guess of the set of T improving over time.
 
-Lastly, we optimise over the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation, typical methods such as gradient descent, genetic algorithms or annealing can be used.  In our implementation we have used the differential evolution algorithm from scipiy.optimize (REF), because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range 0-1.
+Lastly, we optimise over the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation, typical methods such as gradient descent, genetic algorithms or annealing can be used.  In our implementation we have used the differential evolution algorithm from scipiy.optimize (REF), because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range (0,1).
 
 Through optimisation, we find the best fit for the values of $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. As $\sigma_{\varepsilon}/f(x(t))$ $\rightarrow$ $\infty$, $\sigma_{\tau}$ $\rightarrow$ $0$. In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
 On the other hand as $\sigma_{\varepsilon}/f(x(t))$ tends to zero, $\beta x(t)$ $\rightarrow f(x(t))$. The method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
 
 \section{Limitations}
-As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $ith$ and $j_th$ impulse (row) in $X(t)$, separated by time $t$, the effect vectors $f(X_i(t + \tau_i))$ and $f(X_j(t + \tau_j))$ are linearly independent.
+As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $i_{th}$ and $j_{th}$ impulse (row) in $X(t)$, separated by time $t \rightarrow \infty$, the effect vectors $f(X_i(t + \tau_i))$ and $f(X_j(t + \tau_j))$ are linearly independent.
 
 Therefore, the matrix $X(t)$ is decomposed into a number of segments, where each segment is 
 composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest impulse density. Given that we wish to split $X(t)$ into independent matrices $U_n(t)$ and $V_m(t)$, 
@@ -166,10 +166,10 @@ if we choose the split locations such that $\forall_i$ $\epsilon$ $n$ and  $\for
 $f(U_i(t + \tau_i))$ is linearly independent from $f(V_j(t + \tau_j))$, 
 then segments will also be independent and the procedure unique. 
 In practice, it may not be possible to guarantee complete independence of every segment, 
-in which case results may vary. After segmentation, each matrix can be optimised independently, 
+in which case results may vary. After segmentation, each matrix can be optimised independently 
 in parallel, making the inner optimisation procedure tractable for longer length sequences. 
 
-Finally, a note on problem constraints. The likelihood estimates are dependent on the inner ($\mathcal{T}$) optimisation procedure. There is no guarantee that the global maximum will be found during this process, particularly for sequences with a high density of impulses. 
+Finally, a note on problem constraints. The likelihood estimates are dependent on the inner ($\mathcal{T}$) optimisation procedure. This procedure is $NP$-$hard$ and there is no gaurantee that the global maximum will be found, particularly for sequences with a high density of impulses. 
 
 For example, consider the example sequence 
 
@@ -194,7 +194,7 @@ Figure \ref{fig:simulated_example} shows the simulated time series.
 
 The input signal has 17 non-zero impulses which have been drawn from the standard normal distribution. The system is 'off' when $x(t) =0$. In other words, when $x(t) = 0$, $f(x(t)) = 0$. 
 
-The true shift distribution $\mathcal{T}$ is given by $\mathcal{T}$ $~ N(0, 2)$. There is one value of $\tau$ for each of the 17 impulses.
+The true shift distribution $\mathcal{T}$ is given by $\mathcal{T}$ $~$ $N(0, 2)$. There is one value of $\tau$ for each of the 17 impulses.
 
 The green line represents the shifted series, corresponding to the time at which the effect occurs. The blue line is the output ‘y’.
 
