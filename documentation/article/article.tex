@@ -93,7 +93,7 @@ In order to find the best estimate of $f$, we would like to find the function $f
 Specifically, we maximise:
 % TODO: Clean this notation.
 \begin{align}
-    \sum_{i=1}^{n} \log(p(y_i | X_{\tau i} = x_i; \theta_{\mathcal{f}}, \tau_i)) + \sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))
+    \sum_{i=1}^{n} \log(p(y_i | X_{\tau i} = x_i; \theta_{f}, \tau_i)) + \sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))
 \end{align}
 
 where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the model $f$ and time shifts $\mathcal{T}$ respectively. For simplicity, we assume that the time shift distribution and error distributions are independent. 
