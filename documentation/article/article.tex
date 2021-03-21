@@ -9,11 +9,12 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{tabularx}
+\bibliography{references}
 
 \begin{document}
 
 \title{Modelling Stochastic Time Delay for Regression}
-\author{Aaron Pickering}
+\author{Aaron Pickering, Dr. Juan Camilo Orduz}
 %\address{}
 \email{aaron1rcl@gmail.com}
 %\urladdr{} 
@@ -52,9 +53,9 @@ Therefore, we propose a regression model which can handle stochastic time delay 
 We consider the problem as analogous to the typical error-in-variables (EIV) regression. Ordinary regression analyses (and machine learning models) define the loss function with respect to errors in the $y$ axis only. For EIV, errors are considered in both the $y$-axis and the $x$-axis (REF). This is useful when there are measurement errors in the independent variable eg. because your physical measurements have some degree of random error. Similarly, for this problem we assume that we have errors in the $y$-axis and the $t$-axis. That is, there are random prediction errors and random errors in the time domain. 
 
 % TODO: Rewrite concrete expression of support...is it on x ot t? -- Aaron: f(x(t)). Consider x(t) = 0.1 for t is odd, 1 for t is even. If f(x(t)) = 0 for t is odd, 1 for t is even then the series is still valid for our method.  
-Let $x: [a, b] \longrightarrow \mathbb{R}$ be a discrete time series with finite domain (\textcolor{red}{What do we mean with finite domain? maybe is better to use the notation $x: \mathcal{D}_n\subset [a, b] \longrightarrow \mathbb{R}$, where $\mathcal{D}_n$ is a finite set of $n$ points}). We want to determine the, functional relationship $f:\mathbb{R} \longrightarrow \mathbb{R}$ to some other (target) variable $y$. We further impose the extra condition for $f$ to be injective.  The series $x(t)$ must be stationary with a known value for the point at which $f(x(t)) = 0$ (\textcolor{red}{How can we know this point if we do not know $f$?}).  That is, we know at which point the input series has no effect on the output (when it’s off). The size of the support of $f(x(t))$ should be small relative to the total vector length (\textcolor{red}{We need to define what do we mean here by "small"}). We utilise the terminology {\em impulse} for an individual element of the support of $f$.
+Let $x: \mathcal{D}_n\subset [a, b] \longrightarrow \mathbb{R}$, where $\mathcal{D}_n$ is a finite set of $n$ points. We want to determine the, functional relationship $f:\mathbb{R} \longrightarrow \mathbb{R}$ to some other (target) variable $y$. We further impose the extra condition for $f$ to be injective.  The series $x(t)$ must be stationary with a known value for the point at which $f(x(t)) = 0$.  That is, we know at which point the input series has no effect on the output (when it’s off). The size of the support of $f(x(t))$ should be small relative to the total vector length (we we will explore this constraint in more detail in the 'Limitations' section). We utilise the terminology {\em impulse} for an individual element of the support of $f$.
 
-We also assume that the set of $\tau$'s, denoted $\mathcal{T}$, is not a constant, but rather a random draw from some discrete distribution (e.g. discrete gaussian, poisson etc) (\textcolor{red}{We have not defined in the section what "the set of $\tau$'s is"}). For the discrete gaussian kernel $\mathcal{T}\sim T(\mu, \sigma)$ or for the poisson distribution $\mathcal{T}\sim Pois(\lambda)$ and $\varepsilon \sim N(\mu, \sigma_{\varepsilon})$. 
+
 
 Firstly, let us take the input series $x(t)$ and decompose it into its constituent non-zero impulse components. So, if $x(t)$ is a vector given by 
 
@@ -81,14 +82,20 @@ X(t) =
 
 where each impulse is treated separately. \\
 
-We then model:
+Given that each non-zero impulse (row) of $X(t)$ is affected a random time delay (denoted $\tau$), we then model:
 
 % TODO fix notation for T
 \begin{align}
 y(t)= f(1^TX(t + \mathcal{T})) + \varepsilon
 \end{align}
 
-where $X(t + \mathcal{T})$ is the matrix of time shifted impulses, $X(t)$ is the observed input, $1$ is the vector $(1,1,1...1)$ and $\varepsilon$ is a noise term.\\
+where $X(t + \mathcal{T})$ is the matrix of time shifted impulses, 
+ $X(t)$ is the observed input, 
+ $1$ is the vector $(1,1,1...1)$,
+ $\varepsilon$ is a noise term and $\mathcal{T}$ is the set of single impulse time delays ($\tau$'s).\\
+
+We assume that $\mathcal{T}$ is not a constant, but rather a random draw from some discrete distribution (e.g. discrete gaussian, poisson etc). For the discrete gaussian kernel $\mathcal{T}\sim T(\mu, \sigma)$ or for the poisson distribution $\mathcal{T}\sim Pois(\lambda)$ and $\varepsilon \sim N(\mu, \sigma_{\varepsilon})$. 
+
 
 In order to find the best estimate of $f$, we would like to find the function $f$ which maximises the joint likelihood of the time-domain shifts and the prediction residuals. Specifically, we maximise:
 % TODO: Clean this notation.
@@ -103,7 +110,7 @@ where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the mo
 Before optimisation, the values of each individual time shift ($\tau$) are not known. In addition, the prediction errors $\varepsilon$ can only be calculated if each value of $\tau$ is available (because for each time shift there is a different prediction and hence prediction error). Therefore, our algorithm finds the optimum set of time shifts in an inner optimisation, while iteratively searching for the optimum parameters of $f$ in an outer optimisation loop. 
 Firstly, we define a parametric form and some initial parameters to be estimated for the function $f$. For simplicity, let's take the univariate linear model where the $f(x(t))$ is parameterised by $\beta$, $\sigma_{\varepsilon}$(error standard deviation)  and $\sigma_{\tau}$ (time error standard deviation). First, we initialise some starting values for each of these parameters.
 
-Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse and also gives the best possible prediction (\textcolor{red}{we need to try to formalize what "too far" means concretely}). In this example, we can calculate the prediction $y$ by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
+Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse (i.e. a high likelihood given some distribution) and also produces the best possible prediction. In this example, we can calculate the prediction $y$ by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
 
 Finally, we iterate over a number of values of $\tau$ optimising until we maximise the likelihood for the specific impulse.
 
@@ -151,11 +158,27 @@ To accurately calculate the likelihood, we must optimise the time shifts simulta
 \end{enumerate}
 
 
-(\textcolor{red}{For the description of the algorithm we might want to use an "enumerate" latex block as above to make ste steps and dependencies clear}) We initialize the optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution (e.g. zero for the zero mean gaussian). Next, we randomly select a small number of impulses, with the value treated as a hyperparameter. The shifts are then randomly changed to a value drawn for the T (\textcolor{red}{is this $\mathcal{T}$?})distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. If the proposal likelihood is higher than the current maximum likelihood, we update our estimate. This procedure is done in a loop with the best guess of the set of T improving over time.
+Accordingly, the optimisation procedure is:
+\vspace{5mm} %5mm vertical space
 
-Lastly, we optimise over the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$, iteratively alternating between the time shift optimisation and the parameter optimisation. For the parameter optimisation, typical methods such as gradient descent, genetic algorithms or annealing can be used.  In our implementation we have used the differential evolution algorithm from scipiy.optimize (REF), because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range (0,1).
+\begin{enumerate}
+    \item [(1)] Initialise the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$ ($\theta_{f}$) for the function $f$
+    \item [(2)] Find the $\mathcal{T}$ which maximises the likelihood for the given set of parameters:
+        \begin{enumerate} 
+            \item[(i)] Initialize the optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution (e.g. zero for the zero mean gaussian). 
+            \item[(ii)] Next, randomly select a small number of impulses, with the value treated as a hyperparameter. The time shifts are then randomly changed to a value drawn for the $\mathcal{T}$ distribution (proposal vector), and the likelihood (both time shift and prediction error) for the proposal is calculated. 
+            \item[(iii)] If the proposal likelihood is higher than the current maximum likelihood, we update our estimate.
+            \item [(iv)] Return to (i) and repeat, with the best estimate of the set of $\mathcal{T}$ improving over a number of iterations. The number of iterations ($n$) is also treated as a hyperparameter.
+        \end{enumerate} 
+    \item [(3)] Optimise the parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$ ($\theta_{f}$).
 
-Through optimisation, we find the best fit for the values of $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. As $\sigma_{\varepsilon}/f(x(t))$ $\rightarrow$ $\infty$, $\sigma_{\tau}$ $\rightarrow$ $0$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
+\end{enumerate}
+\vspace{5mm} %5mm vertical space
+The procedure consists of an inner optimisation to find the set of $\mathcal{T}$ and an outer optimisation to find the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. 
+By iteratively alternating between the time shift optimisation and the parameter optimisation we are able to maximise equation (4). 
+For the outer parameter optimisation, typical methods such as gradient descent, genetic algorithms and annealing can be used.  In our implementation, we have used the differential evolution algorithm (scipiy.optimize (REF)) because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range (0,1).
+
+The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. As $\sigma_{\varepsilon}/f(x(t))$ $\rightarrow$ $\infty$ , $\sigma_{\tau}$ $\rightarrow$ $0$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
 On the other hand as $\sigma_{\varepsilon}/f(x(t))$ tends to zero, $\beta x(t)$ $\rightarrow f(x(t))$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). The method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
 
 \section{Limitations}
@@ -320,4 +343,17 @@ For example, let us consider a regression model to predict how much coffee someo
 
 We have proposed a form of regression analysis suited to the modelling of stochastic time delay problems. In addition, we have shown the feasibility of the approach and its performance on simulated data. Our approach allows for consistently improved estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.
 
+
+%To-DO: Write References
+
+%\printbibliography
+
+%To-DO Further questions:
+ %- what to write in the abstract?
+ %- we havent addressed previous research that covers related problems, shall we include a section?
+ %- add references for all unbacked major statements
+ %- should we address identifiability?
+ %- examplte notebook should be fully aligned with the paper - fix
+
 \end{document}
+
