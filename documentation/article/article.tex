@@ -24,7 +24,7 @@
 \begin{abstract}
 Systems with stochastic time delay between the input and output present a number of unique challenges. 
 Time domain noise leads to irregular alignments, obfuscates relationships and attenuates inferred coefficients. 
-To handle these challenges, we introduce a regression model that regards stochastic time delay as an 'error' in the time domain. For a certain subset of problems, by modelling both prediction \emph{and time} time errors it is possible to outperform traditional models.
+To handle these challenges, we introduce a maximum likelihood regression model, that regards stochastic time delay as an 'error' in the time domain. For a certain subset of problems, by modelling both prediction \emph{and time} time errors it is possible to outperform traditional models.
 Through a simulated experiment of a univariate problem, we demonstrate results that significantly improve upon Ordinary Least Squares (OLS) regression.
 \end{abstract}
 
@@ -49,6 +49,25 @@ Consider the simple example in Figure 1 where the effect of the input is $1$. Th
 If one were to model the effect using a fixed time delay and OLS, the estimate would only be half the true value because only one of the outputs is aligned. Obviously, this isn't ideal, we want the parameter estimates to be as close to the real values as possible, regardless of any noise in the lag structures. One can mitigate the problem via time aggregations, however in complicated cases with multiple factors, this is just not feasible.
 
 Therefore, we propose a regression model which can handle stochastic time delay structures. We treat the stochastic time delay components as an ‘error’ in the time axis. Next, we find the maximum likelihood estimate, for a given set of parameters, considering the time error ($t$-axis) and the regression error ($y$-axis) simultaneously.
+
+\section{Related Work}
+There is extensive literature on time series problems with time delay dependencies. In the statistical literature there a number of treatments which focus on 
+fixed time delay dependencies. For example, Granger Causality is used to determine whether one time series is useful for forecasting another, across some fixed delay.
+Distributed Lag and Dynamic Regression models are able to handle linear and non-linear cause/effect relations that exist across multiple time lags.
+Nonetheless, these models assume a fixed time lag dependency.
+
+In the machine learning literature, there are a number of models which can handle complex dependencies across time. Sequence models such as the RNN, LSTM and GRU 
+are able to generate predictions which incorporate time delays between input and the output variables. More recently, attention based models such as the Transformer have become the state-of-the-art for a
+variety of tasks. Yet, all of these models have a tacit assumption of a fixed time lag dependency. There is also Dynamic Time Warping (DTW) which tries to find the optimal alignment between time series sequences by minimizing the
+distance between the respective inputs. DTW is able to model varying time lag dependencies but is not purposed for regression, instead being mainly used for pattern matching and sequence alignment.
+
+The field of system identification has a variety of literature on dynamic non-linear systems. For example, the NARMAX model can be used to identify 
+non-linear systems with fixed time delays between input and output. At the same time, there are also treatments on systems with disturbances in the input, known as EIV systems. To our knowledge,
+these works do not deal with uncertainty in the time domain.
+
+Finally, recent literature such as Dynamic Time Lag Regresion and Variable Lag Granger causality deal with non-stationary time lag dependencies. In other words, the lag structure is assumed to evolve over time.
+
+There has been relatively little work on \emph{stochastic time delays} i.e. time delays which vary randomly. In this paper, we deal with this specific case.
 
 
 \section{Methodology}
