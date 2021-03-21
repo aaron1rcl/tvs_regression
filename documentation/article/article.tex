@@ -9,7 +9,7 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{tabularx}
-\bibliography{references}
+
 
 \begin{document}
 
@@ -30,9 +30,9 @@ Through a simulated experiment of a univariate problem, we demonstrate results t
 
 \section{Introduction}
 
-Consider the typical univariate regression problem where the intention is to find the relationship between $x$ and $y$. When extended to time series, a number of time specific complexities arise. For the specific case where the input $x$ affects the output $y$, with a random time delay in between, the estimated coefficients (or weights, predictions etc) are significantly attenuated. This attenuation occurs both in traditional statistical models and machine learning models, and for certain problems can be a serious limitation. The following document proposes techniques for handling this class of time series regression.
+Consider the typical univariate regression problem where the intention is to find the relationship between $x$ and $y$. When extended to time series, a number of time specific complexities arise. For the specific case where the input $x$ affects the output $y$, with a random time delay in between, the estimated coefficients (or weights, predictions etc) are significantly attenuated \cite{spearman}. This attenuation occurs both in traditional statistical models and machine learning models, and for certain problems can be a serious limitation. The following document proposes techniques for handling this class of time series regression.
 
-As an example, let us take the management of blood sugar level in diabetes patients. In people with diabetes, the pancreas can't effectively regulate blood sugar levels. Therefore, these levels must be controlled by insulin injections and a special diet. The challenge for many people is that the relationship between the input (insulin) and output (blood sugar) is extremely complex. The effect of the insulin injection might be observed after $15$, $20$  or $t$ minutes depending on a number of factors, many of which are unknown. Due to the stochastic nature of the time delays, the actual effect can't be easily determined. It is difficult to differentiate the effect of the insulin injection from other factors and accurately determine how much one should take.
+As an example, let us take the management of blood sugar level in diabetes patients. In people with diabetes, the pancreas can't effectively regulate blood sugar levels. Therefore, these levels must be controlled by insulin injections and a special diet. The challenge for many people is that the relationship between the input (insulin) and output (blood sugar) is extremely complex \cite{blood_glucose}. The effect of the insulin injection might be observed after $15$, $20$  or $t$ minutes depending on a number of factors, many of which are unknown. Due to the stochastic nature of the time delays, the actual effect can't be easily determined. It is difficult to differentiate the effect of the insulin injection from other factors and accurately determine how much one should take.
 
 Inference for this type of problem is especially challenging. Typical regression models require a fixed alignment between cause and effect. Using standard methods, we'd need to assume that the effect occurs after some fixed time $t$ which can be inferred from the data. However, if there is any uncertainty in the parameter $t$ ($t$ changes or is noisy) the resulting estimates will be significantly attenuated.
 
@@ -52,27 +52,27 @@ Therefore, we propose a regression model which can handle stochastic time delay 
 
 \section{Related Work}
 There is extensive existing literature on time series problems with time delay dependencies. In the statistical disciplines there a number of treatments which focus on 
-fixed time delay dependencies. For example, Granger Causality is used to determine whether one time series is useful for forecasting another, across some fixed delay.
-Distributed Lag and Dynamic Regression models are able to handle linear and non-linear cause and effect relations that exist across multiple time lags.
+fixed time delay dependencies. For example, Granger Causality \cite{granger} is used to determine whether one time series is useful for forecasting another, across some fixed delay.
+Distributed Lag \cite{almon} and Dynamic Regression models (e.g \cite{dynr}) are able to handle linear and non-linear cause and effect relations that occur across multiple time lags.
 Nonetheless, these models assume a fixed time lag dependency.
 
-In the machine learning literature, there are a number of models which can handle complex dependencies across time. Sequence models such as the RNN, LSTM and GRU 
+In the machine learning literature, there are a number of models which can handle complex dependencies across time. Sequence models such as the RNN, LSTM and GRU \cite{ml}
 are able to generate predictions which incorporate time delays between input and the output variables. More recently, attention based models such as the Transformer have become the state-of-the-art for a
-variety of tasks. Yet, all of these models have a tacit assumption of a fixed time lag dependency. There is also Dynamic Time Warping (DTW) which tries to find the optimal alignment between time series sequences by minimizing the
+variety of tasks, including time series forecasting \cite{deep_transformers}. Yet, all of these models have a tacit assumption of a fixed time lag dependency. There is also Dynamic Time Warping (DTW) \cite{dtw} which tries to find the optimal alignment between time series sequences by minimizing the
 distance between the respective inputs. DTW is able to model varying time lag dependencies but is not purposed for regression, instead being mainly used for pattern matching and sequence alignment.
 
-The field of system identification also has considerable literature on dynamic non-linear systems. For example, the NARMAX model can be used to identify 
-non-linear systems with fixed time delays between input and output. At the same time, there are also treatments on systems with disturbances in the input, known as EIV systems. To our knowledge,
+The field of system identification also has considerable literature on dynamic non-linear systems. For example, the NARX \cite{ml} model can be used to identify 
+non-linear systems with fixed time delays between input and output. At the same time, there are also treatments on systems with disturbances in the input \cite{eiv_sysid}, known as EIV systems. To our knowledge,
 these works do not deal with uncertainty in the time domain.
 
-Finally, recent papers such as Dynamic Time Lag Regression and Variable-Lag Granger Causality deal with non-stationary time lag dependencies. In other words, the lag structure is assumed to evolve over time.
+Finally, recent papers such as Dynamic Time Lag Regression \cite{dtlr} and Variable-Lag Granger Causality \cite{Amornbunchornvej_2019} deal with non-stationary time lag dependencies. In other words, the lag structure is assumed to evolve over time.
 
 There has been little work on \emph{stochastic time delays} i.e. time delays which vary randomly. In this paper, we deal with this specific case.
 
 
 \section{Methodology}
 
-We consider the problem as analogous to the typical error-in-variables (EIV) regression. Ordinary regression analyses (and machine learning models) define the loss function with respect to errors in the $y$ axis only. For EIV, errors are considered in both the $y$-axis and the $x$-axis (REF). This is useful when there are measurement errors in the independent variable eg. because your physical measurements have some degree of random error. Similarly, for this problem we assume that we have errors in the $y$-axis and the $t$-axis. That is, there are random prediction errors and random errors in the time domain. 
+We consider the problem as analogous to the typical error-in-variables (EIV) regression. Ordinary regression analyses (and machine learning models) define the loss function with respect to errors in the $y$ axis only. For EIV, errors are considered in both the $y$-axis and the $x$-axis \cite{deming}. This is useful when there are measurement errors in the independent variable e.g. because the physical measurements have some degree of random error. Similarly, for this problem we assume that we have errors in the $y$-axis and the $t$-axis. That is, there are random prediction errors and random errors in the time domain. 
 
 % TODO: Rewrite concrete expression of support...is it on x ot t? -- Aaron: f(x(t)). Consider x(t) = 0.1 for t is odd, 1 for t is even. If f(x(t)) = 0 for t is odd, 1 for t is even then the series is still valid for our method.  
 Let $x: \mathcal{D}_n\subset [a, b] \longrightarrow \mathbb{R}$, where $\mathcal{D}_n$ is a finite set of $n$ points. We want to determine the, functional relationship $f:\mathbb{R} \longrightarrow \mathbb{R}$ to some other (target) variable $y$. We further impose the extra condition for $f$ to be injective.  The series $x(t)$ must be stationary with a known value for the point at which $f(x(t)) = 0$.  That is, we know at which point the input series has no effect on the output (when it’s off). The size of the support of $f(x(t))$ should be small relative to the total vector length (we we will explore this constraint in more detail in the 'Limitations' section). We utilise the terminology {\em impulse} for an individual element of the support of $f$.
@@ -198,7 +198,7 @@ Accordingly, the optimisation procedure is:
 \vspace{5mm} %5mm vertical space
 The procedure consists of an inner optimisation to find the set of $\mathcal{T}$ and an outer optimisation to find the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. 
 By iteratively alternating between the time shift optimisation and the parameter optimisation we are able to maximise equation (4). 
-For the outer parameter optimisation, typical methods such as gradient descent, genetic algorithms and annealing can be used.  In our implementation, we have used the differential evolution algorithm (scipiy.optimize (REF)) because of its ability to handle noisy objective functions. In order to improve convergence, we also standardize all input variables to the range (0,1).
+For the outer parameter optimisation, typical methods such as gradient descent, genetic algorithms and annealing can be used.  In our implementation, we have used the differential evolution algorithm \cite{diff_ev} (scipiy.optimize \cite{scipy}) because of its ability to handle noisy objective functions \cite{diff_ev}. In order to improve convergence, we also standardize all input variables to the range (0,1).
 
 The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. As $\sigma_{\varepsilon}/f(x(t))$ $\rightarrow$ $\infty$ , $\sigma_{\tau}$ $\rightarrow$ $0$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
 On the other hand as $\sigma_{\varepsilon}/f(x(t))$ tends to zero, $\beta x(t)$ $\rightarrow f(x(t))$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). The method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
@@ -352,11 +352,11 @@ While the example is based on simulated data, we believe that the experiment dem
 
 \section{Future Work}
 
-In the univariate case, the utility of the described method is limited. However, we propose three extensions as future work. The first is to extend the method to multiple regression. We believe that the extension can be built on the same fundamental ideas presented in this document. Next, the model could be extended to include distributed lag structures. A distributed lag structure is where past values of the impulse influence future values of the output. Finally, in relating $x(t)$ to $f(x(t))$, the function $f$ could be extended to the modelling of non-linear forms.
+In the univariate case, the utility of the described method is limited. However, we propose three extensions as future work. The first is to extend the method to multiple regression. We believe that the extension can be built on the same fundamental ideas presented in this document. Next, the model could be extended to include distributed lag structures. A distributed lag structure is where past values of the impulse influence future values of the output \cite{almon}. Finally, in relating $x(t)$ to $f(x(t))$, the function $f$ could be extended to the modelling of non-linear forms.
 
 Through these extensions we can begin to tackle a larger number of practical problems.
 
-In addition, by incorporating these elements we could begin to explore alternative forms of time series prediction. Essentially, existing prediction mechanisms predict the average across time shifts.However, in some situations the predictions could be considered nonsensical.
+In addition, by incorporating these elements we could begin to explore alternative forms of time series prediction. Essentially, existing prediction mechanisms predict the average across time shifts. However, in some situations the predictions could be considered nonsensical.
 
 For example, let us consider a regression model to predict how much coffee someone drinks between 9am and 9:30am, at work. They set off every day in their car at exactly 8:30am and it takes about 30 minutes ($\pm \tau$) to get to work. The time shift $\tau$ could be caused by something as simple as variations in traffic. When they get to work, they always have a coffee. A typical regression might predict $0.5$ coffees between 8:30 am and 9am and $0.5$ coffees between 9am and 9:30am. Alternative prediction forms such as: 'When they get to work, they will have 1 coffee' might be more useful.
 
@@ -368,7 +368,8 @@ We have proposed a form of regression analysis suited to the modelling of stocha
 
 %To-DO: Write References
 
-%\printbibliography
+\bibliography{references}
+\bibliographystyle{ieeetr}
 
 %To-DO Further questions:
  %- what to write in the abstract?
