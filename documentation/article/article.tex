@@ -51,9 +51,9 @@ If one were to model the effect using a fixed time delay and OLS, the estimate w
 Therefore, we propose a regression model which can handle stochastic time delay structures. We treat the stochastic time delay components as an ‘error’ in the time axis. Next, we find the maximum likelihood estimate, for a given set of parameters, considering the time error ($t$-axis) and the regression error ($y$-axis) simultaneously.
 
 \section{Related Work}
-There is extensive literature on time series problems with time delay dependencies. In the statistical literature there a number of treatments which focus on 
+There is extensive existing literature on time series problems with time delay dependencies. In the statistical disciplines there a number of treatments which focus on 
 fixed time delay dependencies. For example, Granger Causality is used to determine whether one time series is useful for forecasting another, across some fixed delay.
-Distributed Lag and Dynamic Regression models are able to handle linear and non-linear cause/effect relations that exist across multiple time lags.
+Distributed Lag and Dynamic Regression models are able to handle linear and non-linear cause and effect relations that exist across multiple time lags.
 Nonetheless, these models assume a fixed time lag dependency.
 
 In the machine learning literature, there are a number of models which can handle complex dependencies across time. Sequence models such as the RNN, LSTM and GRU 
@@ -61,13 +61,13 @@ are able to generate predictions which incorporate time delays between input and
 variety of tasks. Yet, all of these models have a tacit assumption of a fixed time lag dependency. There is also Dynamic Time Warping (DTW) which tries to find the optimal alignment between time series sequences by minimizing the
 distance between the respective inputs. DTW is able to model varying time lag dependencies but is not purposed for regression, instead being mainly used for pattern matching and sequence alignment.
 
-The field of system identification has a variety of literature on dynamic non-linear systems. For example, the NARMAX model can be used to identify 
+The field of system identification also has considerable literature on dynamic non-linear systems. For example, the NARMAX model can be used to identify 
 non-linear systems with fixed time delays between input and output. At the same time, there are also treatments on systems with disturbances in the input, known as EIV systems. To our knowledge,
 these works do not deal with uncertainty in the time domain.
 
-Finally, recent literature such as Dynamic Time Lag Regresion and Variable Lag Granger causality deal with non-stationary time lag dependencies. In other words, the lag structure is assumed to evolve over time.
+Finally, recent papers such as Dynamic Time Lag Regression and Variable-Lag Granger Causality deal with non-stationary time lag dependencies. In other words, the lag structure is assumed to evolve over time.
 
-There has been relatively little work on \emph{stochastic time delays} i.e. time delays which vary randomly. In this paper, we deal with this specific case.
+There has been little work on \emph{stochastic time delays} i.e. time delays which vary randomly. In this paper, we deal with this specific case.
 
 
 \section{Methodology}
