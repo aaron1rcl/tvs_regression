@@ -24,7 +24,7 @@
 \begin{abstract}
 Systems with stochastic time delay between the input and output present a number of unique challenges. 
 Time domain noise leads to irregular alignments, obfuscates relationships and attenuates inferred coefficients. 
-To handle these challenges, we introduce a maximum likelihood regression model, that regards stochastic time delay as an 'error' in the time domain. For a certain subset of problems, by modelling both prediction \emph{and} time errors it is possible to outperform traditional models.
+To handle these challenges, we introduce a maximum likelihood regression model that regards stochastic time delay as an 'error' in the time domain. For a certain subset of problems, by modelling both prediction \emph{and} time errors it is possible to outperform traditional models.
 Through a simulated experiment of a univariate problem, we demonstrate results that significantly improve upon Ordinary Least Squares (OLS) regression.
 \end{abstract}
 
@@ -130,7 +130,7 @@ where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the mo
 \section{Algorithm}
 
 Before optimisation, the values of each individual time shift ($\tau$) are not known. In addition, the prediction errors $\varepsilon$ can only be calculated if each value of $\tau$ is available (because for each time shift there is a different prediction and hence prediction error). Therefore, our algorithm finds the optimum set of time shifts in an inner optimisation, while iteratively searching for the optimum parameters of $f$ in an outer optimisation loop. 
-Firstly, we define a parametric form and some initial parameters to be estimated for the function $f$. For simplicity, let's take the univariate linear model where the $f(x(t))$ is parameterised by $\beta$, $\sigma_{\varepsilon}$(error standard deviation)  and $\sigma_{\tau}$ (time error standard deviation). First, we initialise some starting values for each of these parameters.
+Firstly, we define a parametric form and some initial parameters to be estimated for the function $f$. For simplicity, let's take the univariate linear model where the $f(x(t))$ is parameterised by $\beta$, $\sigma_{\varepsilon}$(error standard deviation)  and $\lambda_{\tau}$ (time error parameter). First, we initialise some starting values for each of these parameters.
 
 Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too far away from the observed impulse (i.e. a high likelihood given some distribution) and also produces the best possible prediction. In this example, we can calculate the prediction $y$ by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
 
@@ -184,7 +184,7 @@ Accordingly, the optimisation procedure is:
 \vspace{5mm} %5mm vertical space
 
 \begin{enumerate}
-    \item [(1)] Initialise the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$ ($\theta_{f}$) for the function $f$
+    \item [(1)] Initialise the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\lambda_{\tau}$ ($\theta_{f}$) for the function $f$
     \item [(2)] Find the $\mathcal{T}$ which maximises the likelihood for the given set of parameters:
         \begin{enumerate} 
             \item[(i)] Initialize the optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution (e.g. zero for the zero mean gaussian). 
@@ -192,15 +192,15 @@ Accordingly, the optimisation procedure is:
             \item[(iii)] If the proposal likelihood is higher than the current maximum likelihood, we update our estimate.
             \item [(iv)] Return to (i) and repeat, with the best estimate of the set of $\mathcal{T}$ improving over a number of iterations. The number of iterations ($n$) is also treated as a hyperparameter.
         \end{enumerate} 
-    \item [(3)] Optimise the parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$ ($\theta_{f}$).
+    \item [(3)] Optimise the parameters $\beta$, $\sigma_{\varepsilon}$ and $\lambda_{\tau}$($\theta_{f}$).
 
 \end{enumerate}
 \vspace{5mm} %5mm vertical space
-The procedure consists of an inner optimisation to find the set of $\mathcal{T}$ and an outer optimisation to find the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\sigma_{\tau}$. 
+The procedure consists of an inner optimisation to find the set of $\mathcal{T}$ and an outer optimisation to find the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\lambda_{\tau}$. 
 By iteratively alternating between the time shift optimisation and the parameter optimisation we are able to maximise equation (4). 
 For the outer parameter optimisation, typical methods such as gradient descent, genetic algorithms and annealing can be used.  In our implementation, we have used the differential evolution algorithm \cite{diff_ev} (scipiy.optimize \cite{scipy}) because of its ability to handle noisy objective functions \cite{diff_ev}. In order to improve convergence, we also standardize all input variables to the range (0,1).
 
-The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. As $\sigma_{\varepsilon}/f(x(t))$ $\rightarrow$ $\infty$ , $\sigma_{\tau}$ $\rightarrow$ $0$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). In the event that $\sigma_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
+The accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. As $\sigma_{\varepsilon}/f(x(t))$ $\rightarrow$ $\infty$ , $\lambda_{\tau}$ $\rightarrow$ $0$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). In the event that $\lambda_{\tau}=0$, the model becomes a ‘fixed lag’ model, and for the discrete gaussian case the parameter estimate $\beta$ tends to the standard linear regression coefficient.
 On the other hand as $\sigma_{\varepsilon}/f(x(t))$ tends to zero, $\beta x(t)$ $\rightarrow f(x(t))$ (\textcolor{red}{we need to write this as $\lim$ to be more formal}). The method provides no guarantee on recovering the exact time shifts, only that the estimates are equal to or better than their OLS counterparts.
 
 \section{Limitations}
@@ -238,9 +238,9 @@ The following section demonstrates a simulated univariate example. Full code to 
 
 Figure \ref{fig:simulated_example} shows the simulated time series.
 
-The input signal has 17 non-zero impulses which have been drawn from the standard normal distribution. The system is 'off' when $x(t) =0$. In other words, when $x(t) = 0$, $f(x(t)) = 0$. 
+The input signal has 20 non-zero impulses which have been drawn from the standard normal distribution. The system is 'off' when $x(t) =0$. In other words, when $x(t) = 0$, $f(x(t)) = 0$. 
 
-The true shift distribution $\mathcal{T}$ is given by $\mathcal{T} \sim N(0, 2)$. There is one value of $\tau$ for each of the 17 impulses.
+The true shift distribution $\mathcal{T}$ is given by $\mathcal{T} \sim Poisson(\lambda = 2)$. There is one value of $\tau$ for each of the 20 impulses.
 
 The green line represents the shifted series, corresponding to the time at which the effect occurs. The blue line is the output $y$.
 
@@ -297,25 +297,26 @@ After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ol
 \label{fig:convergence}
 \end{figure}
 \end{center}
-
+\newpage
 The true set of $\mathcal{T}$ is:
 
 \begin{align}
 \mathcal{T} = 
 \left(
-\begin{array}{ccc}
--1 & 1 & 0 
+\begin{array}{cccccccccccccccccccc}
+2 & 1 & 2 & 0 & 2 & 3 & 1 & 0 & 2 & 4 & 1 & 2 & 3 & 2 & 1 & 0  & 0 & 1 & 1 & 0 
 \end{array}  
 \right)
 \end{align}
+\newline
 
 Compared to the estimated $\mathcal{T}$:
 
 \begin{align}
 \mathcal{T}_{est} = 
 \left(
-\begin{array}{ccc}
--1 & 1 & 0 
+\begin{array}{cccccccccccccccccccc}   
+2 & 1 & 2 & 0 & 2 & 3 & 1 & 1 & 2 & 4 & 1 & 2 & 3 & 2 & 1 & 0  & 0 & 1 & 1 & 0 
 \end{array}  
 \right)
 \end{align}
@@ -330,22 +331,22 @@ Compared to the estimated $\mathcal{T}$:
 \hline
 Parameter & TVS Regression & OLS Regression & True Value \\
 \hline
-$\beta$ & 1.96 & 0.26 & 2  \\
+$\beta$ & 2.09 & 0.5 & 2  \\
 \hline
-$Intercept$ & 6.48 & 6.62 & 6.5 \\
+$Intercept$ & 6.53 & 6.62 & 6.5 \\
 \hline
-$\sigma_t$ & 1.51 & $N/A$ & 1.47 \\
+$\lambda_{\tau}$ & 1.54 & $N/A$ & 1.4 \\
 \hline
-$\sigma_e$ & 0.26 & 1.03 & 0.2 \\
+$\sigma_{\epsilon}$ & 0.20 & 1.03 & 0.2 \\
 \end{tabular}
 \caption{ ... } 
 \label{results_table}
 \end{table}
 \end{center}
 
-As shown in Table \ref{results_table}, the estimated values for $\beta$ and $\sigma_e$ are significantly improved by taking into account the stochastic time delay noise. The estimated $\beta$ using OLS regression is $0.25$, compared to the true value $2$. Even a small amount of noise in the time axis causes attenuation, 
+As shown in Table \ref{results_table}, the estimated values for $\beta$ and $\sigma_{\epsilon}$ are significantly improved by taking into account the stochastic time delay noise. The estimated $\beta$ using OLS regression is $0.5$, compared to the true value $2$. Even a small amount of noise in the time axis causes attenuation, 
 limiting the usefulness of OLS for these problems.
-In comparison, the algorithm described herein estimates a $\beta$ of $1.96$, much closer to the true value.
+In comparison, the algorithm described herein estimates $\beta$ to be $2.09$, much closer to the true value.
 
 While the example is based on simulated data, we believe that the experiment demonstrates clear potential for improvement in the modelling of real world systems with stochastic time delay noise.
 
