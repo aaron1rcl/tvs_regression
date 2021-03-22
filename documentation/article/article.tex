@@ -67,7 +67,7 @@ these works do not deal with uncertainty in the time domain.
 
 Finally, recent papers such as Dynamic Time Lag Regression \cite{dtlr} and Variable-Lag Granger Causality \cite{Amornbunchornvej_2019} deal with non-stationary time lag dependencies. In other words, the lag structure is assumed to evolve over time.
 
-In this paper, we deal with the specific case of \emph{stochastic time delays} i.e. time delays which vary randomly. There appears to be little existing research on this exact topic.
+In this paper, we deal with the specific case of \emph{stochastic time delays} i.e. time delays which vary randomly. There appears to be little existing research on this topic.
 
 
 
@@ -76,7 +76,7 @@ In this paper, we deal with the specific case of \emph{stochastic time delays} i
 We consider the problem as analogous to the typical error-in-variables (EIV) regression. Ordinary regression analyses (and machine learning models) define the loss function with respect to errors in the $y$ axis only. For EIV, errors are considered in both the $y$-axis and the $x$-axis \cite{deming}. This is useful when there are measurement errors in the independent variable e.g. because the physical measurements have some degree of random error. Similarly, for this problem we assume that we have errors in the $y$-axis and the $t$-axis. That is, there are random prediction errors and random errors in the time domain. 
 
 % TODO: Rewrite concrete expression of support...is it on x ot t? -- Aaron: f(x(t)). Consider x(t) = 0.1 for t is odd, 1 for t is even. If f(x(t)) = 0 for t is odd, 1 for t is even then the series is still valid for our method.  
-Let $x: \mathcal{D}_n\subset [a, b] \longrightarrow \mathbb{R}$, where $\mathcal{D}_n$ is a finite set of $n$ points. We want to determine the, functional relationship $f:\mathbb{R} \longrightarrow \mathbb{R}$ to some other (target) variable $y$. Furthermore, we impose the condition that $f$ be injective.  The series $x(t)$ must be stationary with a known value for the point at which $f(x(t)) = 0$.  That is, we know at which point the input series has no effect on the output (when it’s off). The size of the support of $f(x(t))$ should be small relative to the total vector length (we we will explore this constraint in more detail in the 'Limitations' section). We utilise the terminology {\em impulse} for an individual element of the support of $f$.
+Let $x: \mathcal{D}_n\subset [a, b] \longrightarrow \mathbb{R}$, where $\mathcal{D}_n$ is a finite set of $n$ points. We want to determine the, functional relationship $f:\mathbb{R} \longrightarrow \mathbb{R}$ to some other (target) variable $y$. Furthermore, we impose the condition that $f$ be injective.  The series $x(t)$ must be stationary with a known value for the point at which $f(x(t)) = 0$.  That is, we know at which point the input series has no effect on the output (when it’s off). The size of the support of $f(x(t))$ should be small relative to the total vector length (we we will explore this condition further in the 'Limitations' section). We utilise the terminology {\em impulse} for an individual element of the support of $f$.
 
 
 
@@ -105,7 +105,7 @@ X(t) =
 
 where each impulse is treated separately. \\
 
-Given that each non-zero impulse (row) of $X(t)$ is affected a random time delay (denoted $\tau$), we then model:
+Given that each non-zero impulse (row) of $X(t)$ is affected by a random time delay (denoted $\tau$), we then model:
 
 % TODO fix notation for T
 \begin{align}
@@ -139,7 +139,7 @@ Finally, we iterate over a number of values of $\tau$ optimising until we maximi
 
 However, we must also consider that the impulses in $X(t)$ are not independent from each other. After shifting, it's possible that two or more effects occur simultaneously.
 
-This is particularly problematic if there are multiple impulses within a short period of time, or impulses have a distributed effect over multiple time points. 
+This is particularly problematic if there are multiple impulses within a short period of time or impulses have a distributed effect over multiple time points. 
 
 As an example consider the series 
 
@@ -176,7 +176,7 @@ y =
 
 To accurately calculate the likelihood, we must optimise the time shifts simultaneously. Therefore, we treat the problem of finding the best set of time shifts as a discrete optimisation problem. For the optimisation step we utilise two assumptions.
 \begin{enumerate}
-\item Firstly, smaller shifts are more likely than larger shifts (proportionate to the standard deviation of the $\mathcal{T}$ distribution). The algorithm should explore the space of smaller shifts more often than larger shifts. 
+\item Firstly, smaller shifts are more likely than larger shifts (proportionate to the dispersion of the $\mathcal{T}$ distribution). The algorithm should explore the space of smaller shifts more often than larger shifts. 
 \item Secondly, impulses close to each other are more likely to be dependent than impulses further away. 
 \end{enumerate}
 
@@ -211,7 +211,7 @@ Therefore, the matrix $X(t)$ is decomposed into a number of segments, where each
 composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest impulse density. Given that we wish to split $X(t)$ into independent matrices $U_n(t)$ and $V_m(t)$, 
 if we choose the split locations such that $\forall_i$ $\epsilon$ $n$ and  $\forall_j$ $\epsilon$ $m$, 
 $f(U_i(t + \tau_i))$ is linearly independent from $f(V_j(t + \tau_j))$, 
-then segments will also be independent and the procedure unique (\textcolor{red}{fix notation}). 
+then the segments will also be independent and the procedure unique (\textcolor{red}{fix notation}). 
 In practice, it may not be possible to guarantee complete independence of every segment, 
 in which case results may vary. After segmentation, each matrix can be optimised independently 
 in parallel, making the inner optimisation procedure tractable for longer length sequences. 
@@ -286,7 +286,7 @@ After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ol
 \begin{center}
 \begin{figure}
 \includegraphics[scale=0.5]{images/tvs_errors.png}
-\caption{Errors...}
+\caption{Fit Residuals}
 \label{fig:tvs_errors}
 \end{figure}
 \end{center}
@@ -294,7 +294,7 @@ After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ol
 \begin{center}
 \begin{figure}
 \includegraphics[scale=0.6]{images/convergence.png} 
-\caption{Convergence ...}
+\caption{Convergence}
 \label{fig:convergence}
 \end{figure}
 \end{center}
@@ -332,13 +332,13 @@ Compared to the estimated $\mathcal{T}$:
 \hline
 Parameter & TVS Regression & OLS Regression & True Value \\
 \hline
-$\beta$ & 2.09 & 0.5 & 2  \\
+$\beta$ & 2.09 & 0.50 & 2.00  \\
 \hline
-$Intercept$ & 6.53 & 6.62 & 6.5 \\
+$Intercept$ & 6.53 & 6.62 & 6.50 \\
 \hline
-$\lambda_{\tau}$ & 1.54 & $N/A$ & 1.4 \\
+$\lambda_{\tau}$ & 1.54 & $N/A$ & 1.40 \\
 \hline
-$\sigma_{\epsilon}$ & 0.20 & 1.03 & 0.2 \\
+$\sigma_{\epsilon}$ & 0.20 & 1.03 & 0.20 \\
 \end{tabular}
 \caption{ ... } 
 \label{results_table}
