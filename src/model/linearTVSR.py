@@ -75,6 +75,7 @@ class linearTVSRModel:
     
             # Scale the time dimension to have a max value of 1
             if max_t is None:
+                # TO-DO: remove hardcoded 5% value and replace with something general
                 #Make the max t 5% of the length by default
                 self.scale_t = self.x.shape[0]*0.05
             else:
@@ -128,8 +129,8 @@ class linearTVSRModel:
         sd = params[2]
         C = params[3]
         
-        # Hack workaround for values outside of the range
-        # Need a cleaner solution
+        # TO-DO: Currently this is a quick hack workaround for values outside of the range
+        # Need a clean general solution.
         if tsd <= 0:
             return 10000
         
@@ -142,10 +143,12 @@ class linearTVSRModel:
         # Apply some rules to the loop boundaries
         loop_bounds = src.refine_bounds(np.copy(self.X), tsd)
 
-        ##### TO-DO
+        #Either split into orthogonal segments or not
         if self.split == True:
             # Define an input to select whether to split or not
-            X_segs, y_segs, dim_segs, bnds_segs = create_segments(np.copy(self.X), np.copy(self.x), np.copy(self.y), loop_bounds)
+            X_segs, y_segs, dim_segs, bnds_segs = create_segments(np.copy(self.X), np.copy(self.x), np.copy(self.y), loop_bounds, tsd)
+            self.segs = dim_segs
+ 
             # Loop through all the segments
             vals = np.array([])
             taus = np.array([])
@@ -164,6 +167,7 @@ class linearTVSRModel:
                 val, tau = self.inner_optimisation(dim_seg, f)
                 
                 print("------ Seg Likelihood: " + str(val))
+                # Add the segment values a list
                 vals = np.append(vals, val)
                 taus = np.append(taus, tau)
         else:
@@ -215,15 +219,16 @@ class linearTVSRModel:
             
     def inner_optimisation(self,  dim, f):
         # Run the inner optimisation algorithm and retrieve the max likelihood
-        val, tau = tau_optimiser([0]*dim[0], f, 1000, 3, self.family)
+        val, tau = tau_optimiser([0]*dim[0], f, self.iter, 3, self.family)
 
         return val, tau
             
             
-    def fit(self, x_train, y_train, method="L-BFGS-B", split=True, max_t=None, family=None):
+    def fit(self, x_train, y_train, method="L-BFGS-B", split=True, max_t=None, family=None, iterations=1000):
         
         # Define the setting
         self.split = split
+        self.iter = iterations
         
         # Set the family
         if family is not None:
