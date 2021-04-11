@@ -11,9 +11,8 @@
 \usepackage{tabularx}
 
 \theoremstyle{definition}
-\newtheorem*{example}{Example}
-\theoremstyle{definition}
-\newtheorem*{remark}{Remark}
+\newtheorem{example}{Example}[section]
+\newtheorem{remark}{Remark}[section]
 
 
 \begin{document}
@@ -27,7 +26,6 @@
 %\address{}
 
 \date{\today}
-\maketitle
 
 \begin{abstract}
 Systems with stochastic time delay between the input and output present a number of unique challenges. 
@@ -35,6 +33,8 @@ Time domain noise leads to irregular alignments, obfuscates relationships and at
 To handle these challenges, we introduce a maximum likelihood regression model that regards stochastic time delay as an 'error' in the time domain. For a certain subset of problems, by modelling both prediction \emph{and} time errors it is possible to outperform traditional models.
 Through a simulated experiment of a univariate problem, we demonstrate results that significantly improve upon Ordinary Least Squares (OLS) regression.
 \end{abstract}
+
+\maketitle
 
 \section{Introduction}
 
@@ -311,32 +311,32 @@ After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ol
 \newpage
 The true set of $\mathcal{T}$ is:
 
-\begin{align}
+\begin{align*}
 \mathcal{T} = 
 \left(
 \begin{array}{cccccccccccccccccccc}
 2 & 1 & 2 & 0 & 2 & 3 & 1 & 0 & 2 & 4 & 1 & 2 & 3 & 2 & 1 & 0  & 0 & 1 & 1 & 0 
 \end{array}  
 \right)
-\end{align}
+\end{align*}
 \newline
 
 Compared to the estimated $\mathcal{T}$:
 
-\begin{align}
+\begin{align*}
 \mathcal{T}_{est} = 
 \left(
 \begin{array}{cccccccccccccccccccc}   
 2 & 1 & 2 & 0 & 2 & 3 & 1 & 1 & 2 & 4 & 1 & 2 & 3 & 2 & 1 & 0  & 0 & 1 & 1 & 0 
 \end{array}  
 \right)
-\end{align}
+\end{align*}
 
 
 
 \begin{center}
 \begin{table}
-\begin{tabular}{c|c|c|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
 Parameter & TVS Regression & OLS Regression & True Value \\
 \hline
@@ -347,8 +347,9 @@ $Intercept$ & 6.53 & 6.62 & 6.50 \\
 $\lambda_{\tau}$ & 1.54 & $N/A$ & 1.40 \\
 \hline
 $\sigma_{\epsilon}$ & 0.20 & 1.03 & 0.20 \\
+\hline
 \end{tabular}
-\caption{ ... } 
+\caption{ Parameter comparison between TVR and OLS regression against the true value.} 
 \label{results_table}
 \end{table}
 \end{center}
@@ -362,26 +363,17 @@ While the example is based on simulated data, we believe that the experiment dem
 
 \section{Future Work}
 
-In the univariate case, the utility of the described method is limited. However, we propose three extensions as future work. The first is to extend the method to multiple regression. 
-We believe that the extension can be built on the same fundamental ideas presented in this document. Next, the model could be extended to include distributed lag structures. A distributed lag structure is where past values of the impulse influence future values of the output \cite{almon}. Finally, in relating $x(t)$ to $f(x(t))$, the function $f$ could be extended to the modelling of non-linear forms.
+In the univariate case, the utility of the described method is limited. However, we propose three extensions as future work. The first is to extend the method to multiple regression. We believe that the extension can be built on the same fundamental ideas presented in this document. Next, the model could be extended to include distributed lag structures. A distributed lag structure is where past values of the impulse influence future values of the output \cite{almon}. Finally, in relating $x(t)$ to $f(x(t))$, the function $f$ could be extended to the modelling of non-linear forms. 
 
-Through these extensions we can begin to tackle a number of practical problems that are defined by stochastic relationships between the input and output e.g. the blood glucose problem described in the introduction.
-
-In addition, by incorporating these elements we could begin to explore alternative forms of time series prediction. Essentially, existing prediction mechanisms predict the average across time shifts. However, in some situations the predictions could be considered nonsensical.
-
-For example, let us consider a regression model to predict how much coffee someone drinks between 9am and 9:30am, at work. They set off every day in their car at exactly 8:30am and it takes about 30 minutes ($\pm \tau$) to get to work. The time shift $\tau$ could be caused by something as simple as variations in traffic. When they get to work, they always have a coffee. A typical regression might predict $0.5$ coffees between 8:30 am and 9am and $0.5$ coffees between 9am and 9:30am. Alternative prediction forms such as: 'When they get to work, they will have 1 coffee' might be more useful.
-
+Through these extensions we can begin to tackle a number of practical problems that are defined by stochastic relationships between the input and output e.g. the blood glucose problem described in the introduction. In addition, by incorporating these elements we could begin to explore alternative forms of time series prediction. Essentially, existing prediction mechanisms predict the average across time shifts. However, in some situations the predictions could be considered nonsensical. For example, let us consider a regression model to predict how much coffee someone drinks between 9am and 9:30am, at work. They set off every day in their car at exactly 8:30am and it takes about 30 minutes ($\pm \tau$) to get to work. The time shift $\tau$ could be caused by something as simple as variations in traffic. When they get to work, they always have a coffee. A typical regression might predict $0.5$ coffees between 8:30 am and 9am and $0.5$ coffees between 9am and 9:30am. Alternative prediction forms such as: 'When they get to work, they will have 1 coffee' might be more useful.
 
 \section{Conclusion}
 
 We have proposed a form of regression analysis suited to the modelling of stochastic time delay problems. In addition, we have shown the feasibility of the approach and its performance on simulated data. Our approach allows for consistently improved estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.
 
-
-%To-DO: Write References
-
-\bibliography{references}
-\bibliographystyle{ieeetr}
-
+% References
+\bibliographystyle{acm}
+\bibliography{references} 
 
 \end{document}
 
