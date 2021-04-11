@@ -10,6 +10,11 @@
 \usepackage{hyperref}
 \usepackage{tabularx}
 
+\theoremstyle{definition}
+\newtheorem*{example}{Example}
+\theoremstyle{definition}
+\newtheorem*{remark}{Remark}
+
 
 \begin{document}
 
@@ -128,7 +133,7 @@ In order to find the best estimate of $f$, we would like to find the function $f
     \mathcal{L} = 
     \underbrace{\sum_{i=1}^{n} \log(p(y_i | X_{\tau_i} = x_i; \theta_{f}, \tau_i))}_{\mathcal{L}_1} 
     + 
-    \underbrace{\sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}, \theta_{f}))}_{\mathcal{L}_2}
+    \underbrace{\sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))}_{\mathcal{L}_2}
 \end{align}
 
 where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the model $f$ and time shifts $\mathcal{T}$ respectively. In other words, the $\mathcal{L}_2$ term represents likelihood of time shifts and the $\mathcal{L}_1$ term represents the likelihood of the prediction residuals. We maximise these terms simultaneously. For simplicity, we assume that the time shift distribution and error distributions are independent. 
@@ -136,20 +141,19 @@ where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the mo
 \section{Algorithm}
 
 Before optimisation, the values of each individual time shift $\tau$ are not known. In addition, the prediction errors $\varepsilon$ can only be calculated if each value of $\tau$ is available (because for each time shift there is a different prediction and hence prediction error). Therefore, our algorithm finds the optimum set of time shifts in an inner optimisation ($\mathcal{L}_2$), while iteratively searching for the optimum parameters of $f$ in an outer optimisation loop ($\mathcal{L}_1$). 
-Firstly, we define a parametric form $f(x;\theta_f)$ and some initial parameters to be estimated for the function $f$. For simplicity, let's take the univariate linear model with gaussian errors, where the $f(x(t))$ is parameterised by $\beta$ and $\sigma_{\varepsilon}$ (error standard deviation). In addition, we choose a poisson distribution for $\mathcal{T}$, where $\theta_{\mathcal{T}}$ is a parameterised by its mean $\lambda_{\mathcal{T}}$. The choice of a poisson distribution for $\mathcal{T}$
+Firstly, we define a parametric form $f(x;\theta_f)$ and some initial parameters to be estimated for the function $f$. 
+
+\begin{example}\label{example:poisson}
+Let's take the univariate linear model with gaussian errors, where the $f(x(t))$ is parameterised by $\beta$ and $\sigma_{\varepsilon}$ (error standard deviation). In addition, we choose a poisson distribution for $\mathcal{T}$, where $\theta_{\mathcal{T}}$ is a parameterised by its mean $\lambda_{\mathcal{T}}$. The choice of a poisson distribution for $\mathcal{T}$
 ensures discrete, positive time shifts only.
+\end{example}
 
-First, let us initialise some starting values for each of these parameters.
 
-Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too distant from the observed impulse (i.e. has a high likelihood given some distribution) and also produces the best possible prediction. In this example, we can calculate the prediction $y$ by simply multiplying the shifted value by its parameter $\beta$. From there, the likelihood estimate is derived from the time shift and the prediction error.
-
+First, let us iniialise some starting values for each of these parameters. Now, we want to find the best possible time shift $\tau$ for each input impulse in $X(t)$. It stands to reason that the best possible time shift would be one that is not too distant from the observed impulse (i.e. has a high likelihood given some distribution) and also produces the best possible prediction. From there, the likelihood estimate is derived from the time shift and the prediction error.
 Finally, we iterate over a number of values of $\tau$ optimising until we maximise the likelihood for the specific impulse.
 
-However, we must also consider that the impulses in $X(t)$ are not independent from each other. After shifting, it's possible that two or more effects occur simultaneously.
-
-This is particularly problematic if there are multiple impulses within a short period of time or impulses have a distributed effect over multiple time points. 
-
-As an example consider the series 
+\begin{remark}
+However, we must also consider that the impulses in $X(t)$ are not independent from each other. After shifting, it's possible that two or more effects occur simultaneously. This is particularly problematic if there are multiple impulses within a short period of time or impulses have a distributed effect over multiple time points. As an example consider the series 
 
 \begin{align*}
 x(t) = 
@@ -181,56 +185,50 @@ y =
 \end{array}  
 \right)
 \end{align*}
+\end{remark}
 
 To accurately calculate the likelihood, we must optimise the time shifts simultaneously. Therefore, we treat the problem of finding the best set of time shifts as a discrete optimisation problem. For the optimisation step we utilise two assumptions.
+
 \begin{enumerate}
 \item Firstly, smaller shifts are more likely than larger shifts (proportionate to the dispersion of the $\mathcal{T}$ distribution). The algorithm should explore the space of smaller shifts more often than larger shifts. 
 \item Secondly, impulses close to each other are more likely to be dependent than impulses further away. 
 \end{enumerate}
 
 
-Accordingly, the optimisation procedure is:
-\vspace{5mm} %5mm vertical space
+Accordingly, the optimisation procedure is (CHANGE TO GENERAL PARAMETERS):
 
 \begin{enumerate}
     \item [(1)] Initialise the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\lambda_{\tau}$ for the function $f$.
     \item [(2)] Find the $\mathcal{T}$ which maximises the likelihood for the given set of parameters:
         \begin{enumerate} 
             \item[(i)] Initialize the discrete optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution ($\lambda_{\tau}$).
-            \item[(ii)] Next, randomly select a small number of impulses, with the value treated as a hyperparameter. For each impulse, a random time shift is drawn from the $\mathcal{T}$ distribution creating a proposal vector. The likelihood (both time shift and prediction error) for the proposal is calculated. 
-            \item[(iii)] If the proposal likelihood is higher than the current maximum likelihood, our estimate is updated.
-            \item [(iv)] Return to (i) and repeat. The best estimate of the set of $\mathcal{T}$ improves each iteration. The number of iterations ($n$) is also treated as a hyperparameter.
+            \item[(ii)] Next, randomly select a small number of impulses $m$, with the value of $m$ treated as a hyperparameter. For each impulse, a random time shift is drawn from the $\mathcal{T}$ distribution creating a proposal vector. 
+            \item [(iii)]The likelihood (both time shift and prediction error) for the proposal is calculated. 
+            \item[(iv)] If the proposal likelihood is higher than the current maximum likelihood, our estimate is updated.
+            \item [(v)] Return to (i) and repeat. The best estimate of the set of $\mathcal{T}$ improves each iteration. The number of iterations ($N$) is also treated as a hyperparameter.
         \end{enumerate} 
     \item [(3)] Optimise the model parameters $\beta$, $\sigma_{\varepsilon}$ and $\lambda_{\tau}$.
-
 \end{enumerate}
-\vspace{5mm} %5mm vertical space
-The procedure consists of an inner optimisation $\mathcal{L}_2$ to find the set of $\mathcal{T}$ and an outer optimisation $\mathcal{L}_1$ to find the set of parameters $\beta$, $\sigma_{\varepsilon}$ and $\lambda_{\tau}$. 
-By iteratively alternating between the time shift optimisation and the parameter optimisation we are able to maximise equation (2). 
-For the outer parameter optimisation, typical methods such as gradient descent, genetic algorithms and simulated annealing can be used.  In our implementation, we have used the differential evolution algorithm \cite{diff_ev} (scipiy.optimize \cite{scipy}) because of its ability to handle noisy objective functions \cite{diff_ev}. In order to improve convergence, we also standardize all input variables to the range (0,1).
 
+\begin{remark}
+In Example \ref{example:poisson} we recommend to initialize the discrete optimisation algorithm with all parameters set to the mean of the $\mathcal{T}$ distribution ($\lambda_{\tau}$).
+\end{remark}
+
+For the outer parameter optimisation (Step (3)), typical methods such as gradient descent, genetic algorithms and simulated annealing can be used.  In our implementation, we have used the differential evolution algorithm \cite{diff_ev} (scipiy.optimize \cite{scipy}) because of its ability to handle noisy objective functions \cite{diff_ev}. In order to improve convergence, we also standardize all input variables to the range (0,1).
+
+
+\begin{remark}
 We also note that the accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. 
-As the ratio of noise $\sigma_{\epsilon}$ to effect $f(x(t))$ increases, the time shift distribution $\mathcal{T}$ shrinks. 
-In the event that $\lambda_{\tau}$ becomes 0, the model becomes a ‘fixed lag’ model, and the parameter estimate $\beta$ tends to the standard linear regression coefficient.
-Therefore, the method provides no guarantee on recovering the exact time shifts, only that the coefficient estimates are equal to or better than their OLS counterparts.
+As the ratio of noise $\sigma_{\varepsilon}$ to effect $f(x(t))$ increases, the time shift distribution $\mathcal{T}$ shrinks. 
+In the event that $\lambda_{\tau}$ (CHANGE to $\theta_{f}$) becomes 0, the model becomes a ‘fixed lag’ model, and the parameter estimate $\beta$ tends to the standard linear regression coefficient. Therefore, the method provides no guarantee on recovering the exact time shifts, only that the coefficient estimates are equal to or better than their OLS counterparts.
+\end{remark}
 
 \section{Limitations}
 \subsection{Scaling}
-As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $i_{th}$ and $j_{th}$ impulse (row) in $X(t)$, separated by time $t \longrightarrow \infty$, the effect vectors $f(X_i(t + \tau_i))$ and $f(X_j(t + \tau_j))$ are linearly independent.
+As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $i_{th}$ and $j_{th}$ impulse (row) in $X(t)$ are far away then effect vectors are orthogonal. Hence, we wan decompose wth matrix $X(t)$ in orthogonal blocks on which the algorithm can then be run separately.
 
-Therefore, the matrix $X(t)$ is decomposed into a number of segments, where each segment is 
-composed of a smaller number of dependent impulses. To select the right split locations, we search the time series for locations with the lowest impulse density. Given that we wish to split $X(t)$ into independent matrices $U_n(t)$ and $V_m(t)$, 
-if we choose the split locations such that $\forall_i$ $\epsilon$ $n$ and  $\forall_j$ $\epsilon$ $m$, 
-$f(U_i(t + \tau_i))$ is linearly independent from $f(V_j(t + \tau_j))$, 
-then the segments will also be independent and the procedure unique (\textcolor{red}{fix notation}). 
-In practice, it may not be possible to guarantee complete independence of every segment, 
-in which case results may vary. After segmentation, each matrix can be optimised independently 
-in parallel, making the inner optimisation procedure tractable for longer length sequences. 
-\newline
-\subsection{Constraints}
-Finally, a note on problem constraints. The likelihood estimates are dependent on the inner optimisation procedure. There is no gaurantee that the global maximum will be found, particularly for sequences with a high density of impulses. 
-
-For example, consider the example sequence:
+\subsection{Constraints (TO DO: ReWrite)}
+Finally, a note on problem constraints. The likelihood estimates are dependent on the inner optimisation procedure. There is no guarantee that the global maximum will be found, particularly for sequences with a high density of impulses. For example, consider the sequence:
 
 \begin{align*}
     x(t) = 
