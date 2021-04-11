@@ -1,10 +1,10 @@
 import src.support as src
 import numpy as np
 
-
-def create_segments(X, x, y, bounds):        
+ 
+def create_segments(X, x, y, bounds, tsd ):        
     loc, loc_diff = get_impulse_locations(x)
-    splits = get_split_points(bounds, loc, loc_diff)
+    splits = get_split_points(bounds, loc, loc_diff, tsd)
     # Split the dependent variable
     y_segments = np.split(y, splits)
     
@@ -35,15 +35,12 @@ def get_impulse_locations(x):
     return loc, loc_diff
     
     
-def get_split_points(bounds, loc, loc_diff):
-    
-    # Extract the maximum boundary
-    global_max_bound = np.max(bounds)
-    global_min_bound = np.min(bounds)
+def get_split_points(bounds, loc, loc_diff, tsd):
     
 
     # Find the spaces which are greater than twice the boundary (2 points movin toward each other)
-    splits = np.where(loc_diff > np.max([np.abs(global_min_bound), global_max_bound])*2)
+    # To-Do: remove hardcoded hyperparameters
+    splits = np.where(loc_diff > np.min([tsd*3,20]))
     # Fit the array location where these splits occur
     split_locations = loc[splits] + np.round(loc_diff[splits]/2)
         
