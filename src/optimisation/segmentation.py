@@ -40,6 +40,11 @@ def get_split_points(bounds, loc, loc_diff, tsd):
 
     # Find the spaces which are greater than twice the boundary (2 points movin toward each other)
     # To-Do: remove hardcoded hyperparameters
+    # Set a min spacing for the split difference
+    if tsd <= 2:
+        split_diff = 2
+    else:
+        split_diff = tsd*3
     splits = np.where(loc_diff > np.min([tsd*3,20]))
     # Fit the array location where these splits occur
     split_locations = loc[splits] + np.round(loc_diff[splits]/2)
