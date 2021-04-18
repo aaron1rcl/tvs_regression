@@ -18,9 +18,9 @@
 \begin{document}
 
 \title{Modelling Stochastic Time Delay for Regression Analysis}
-\author[Aaron]{Aaron Pickering}
+\author[Aaron Pickering]{Aaron Pickering}
 \email{\href{mailto:aaron1rcl@gmail.com}{aaron1rcl@gmail.com}}
-\author[Juan]{Juan Camilo Orduz}
+\author[Juan Camilo Orduz]{Juan Camilo Orduz}
 \email{\href{mailto:juanitorduz@gmail.com}{juanitorduz@gmail.com}}
 \urladdr{\href{https://juanitorduz.github.io/}{juanitorduz.github.io}}
 %\address{}
@@ -56,7 +56,9 @@ Consider the simple example in Figure 1 where the effect of the input is $1$. Th
 
 If one were to model the effect using a fixed time delay and OLS, the estimate would only be half the true value because only one of the outputs is aligned. Obviously, this isn't ideal, we want the parameter estimates to be as close to the real values as possible, regardless of any noise in the lag structures. One can mitigate the problem via time aggregations, however in complicated cases with multiple factors, this is just not feasible.
 
-Therefore, we propose a regression model which can handle stochastic time delay structures. We treat the stochastic time delay components as an ‘error’ in the time axis. Next, we find the maximum likelihood estimate, for a given set of parameters, considering the time error ($t$-axis) and the regression error ($y$-axis) simultaneously.
+Therefore, we propose a regression model which can handle stochastic time delay structures. We treat the stochastic time delay components as an ‘error’ in the time axis. Next, we find the maximum likelihood estimate, for a given set of parameters, considering the time error ($t$-axis) and the regression error ($y$-axis) simultaneously.\\
+
+An open source Python implementation is available on \href{https://github.com/aaron1rcl/tvs_regression/}{GitHub}.
 
 \section{Related Work}
 There is extensive existing literature on time series problems with time delay dependencies. In the statistical disciplines there a number of treatments which focus on 
@@ -76,8 +78,6 @@ these works do not deal with uncertainty in the time domain.
 Finally, recent papers such as Dynamic Time Lag Regression \cite{dtlr} and Variable-Lag Granger Causality \cite{Amornbunchornvej_2019} deal with non-stationary time lag dependencies. In other words, the lag structure is assumed to evolve over time.
 
 In this paper, we deal with the specific case of \emph{stochastic time delays} i.e. time delays which vary randomly. There appears to be little existing research on this topic.
-
-
 
 \section{Methodology}
 
@@ -136,7 +136,9 @@ In order to find the best estimate of $f$, we would like to find the function $f
     \underbrace{\sum_{i=1}^{n} \log(p(\tau_i| \theta_{\mathcal{T}}))}_{\mathcal{L}_2}
 \end{align}
 
-where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the model $f$ and time shifts $\mathcal{T}$ respectively. In other words, the $\mathcal{L}_2$ term represents likelihood of time shifts and the $\mathcal{L}_1$ term represents the likelihood of the prediction residuals. We maximise these terms simultaneously. For simplicity, we assume that the time shift distribution and error distributions are independent. 
+where $\theta_{f}$ and $\theta_{\mathcal{T}}$ represent the parameters of the model $f$ and time shifts $\mathcal{T}$ respectively. In other words, the $\mathcal{L}_2$ term represents likelihood of time shifts and the $\mathcal{L}_1$ term represents the likelihood of the prediction residuals. We maximise these terms simultaneously. For simplicity, we assume that the time shift distribution and error distributions are independent. \\
+
+We will refer to this algorithm as {\em Time Varying Stochastic (TVS) Regression}.
 
 \section{Algorithm}
 
@@ -245,23 +247,15 @@ In such cases, the estimated likelihood is likely to be close to but not exactly
 
 \section{Experiment}
 
-For the model, we use the nomenclature Time Varying Stochastic (TVS) Regression and the full code to reproduce the example can be found via \href{https://github.com/aaron1rcl/tvs_regression/}{TVS Regression on GitHub}.
-
-The following section demonstrates a simulated univariate example of TVS Regression. Figure \ref{fig:simulated_example} shows the simulated time series.
-
-The input signal has 20 non-zero impulses which have been drawn from the standard normal distribution. The system is 'off' when $x(t) =0$. In other words, when $x(t) = 0$, $f(x(t)) = 0$. 
-
-The true shift distribution $\mathcal{T}$ is given by $\mathcal{T} \sim Poisson(\lambda = 2)$. There is one value of $\tau$ for each of the 20 impulses.
-
-The green line represents the shifted series, corresponding to the time at which the effect occurs. The blue line is the output $y$ which includes a small amount of gaussian noise.
-
-The values for the parameters were arbitrarily selected. The output y is therefore defined by the following equation:
+The following section demonstrates a simulated univariate example of TVS Regression. Figure \ref{fig:simulated_example} shows the simulated time series. The full code can be found via \href{https://github.com/aaron1rcl/tvs_regression/blob/master/notebooks/1_univariate_example.ipynb}{TVS Regression on GitHub}. 
+The input signal has $20$ non-zero impulses which have been drawn from the standard normal distribution. The system is 'off' when $x(t) =0$. In other words, when $x(t) = 0$, $f(x(t)) = 0$. The true shift distribution $\mathcal{T}$ is given by $\mathcal{T} \sim Poisson(\lambda = 2)$. There is one value of $\tau$ for each of the 20 impulses. The green line in Figure \ref{fig:simulated_example} represents the shifted series, corresponding to the time at which the effect occurs. The blue line is the output $y$ which includes a small amount of gaussian noise. The values for the parameters were arbitrarily selected. The output $y$ is defined by the following equation:
 
 
-\begin{align}
+\begin{align*}
     y = 2(1^TX(t + \mathcal{T})) + 6.5
-\end{align}
+\end{align*}
 
+A histogram of the actual distribution of $\mathcal{T}$ is shown in Figure \ref{fig:real_shifts}.
 
 \begin{center}
 \begin{figure}
@@ -271,7 +265,7 @@ The values for the parameters were arbitrarily selected. The output y is therefo
 \end{figure}
 \end{center}
 
-A histogram of the actual distribution of $\mathcal{T}$ is shown in Figure \ref{fig:real_shifts}.
+After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ols_fit} shows the model fit (denoted TVS) and a comparison with standard OLS. Figures \ref{fig:tvs_errors} and Figure \ref{fig:convergence} show the error distribution of the TVS fit and the convergence of the TVS model respectively.
 
 \begin{center}
 \begin{figure}
@@ -281,7 +275,6 @@ A histogram of the actual distribution of $\mathcal{T}$ is shown in Figure \ref{
 \end{figure}
 \end{center}
 
-After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ols_fit} shows the model fit (denoted TVS) and a comparison with standard OLS. Figures \ref{fig:tvs_errors} and Figure \ref{fig:convergence} show the error distribution of the TVS fit and the convergence of the TVS model respectively.
 
 \begin{center}
 \begin{figure}
@@ -308,30 +301,23 @@ After fitting the model, we obtain the following results. Figure \ref{fig:tvs_ol
 \label{fig:convergence}
 \end{figure}
 \end{center}
-\newpage
-The true set of $\mathcal{T}$ is:
+
+The true values of $\mathcal{T}$ (true shifts) and the estimated values $\mathcal{T}_{est}$ are:
 
 \begin{align*}
-\mathcal{T} = 
+\mathcal{T} &= 
 \left(
 \begin{array}{cccccccccccccccccccc}
 2 & 1 & 2 & 0 & 2 & 3 & 1 & 0 & 2 & 4 & 1 & 2 & 3 & 2 & 1 & 0  & 0 & 1 & 1 & 0 
 \end{array}  
-\right)
-\end{align*}
-\newline
-
-Compared to the estimated $\mathcal{T}$:
-
-\begin{align*}
-\mathcal{T}_{est} = 
+\right) \\
+\mathcal{T}_{est} &= 
 \left(
 \begin{array}{cccccccccccccccccccc}   
 2 & 1 & 2 & 0 & 2 & 3 & 1 & 1 & 2 & 4 & 1 & 2 & 3 & 2 & 1 & 0  & 0 & 1 & 1 & 0 
 \end{array}  
 \right)
 \end{align*}
-
 
 
 \begin{center}
@@ -354,22 +340,17 @@ $\sigma_{\epsilon}$ & 0.20 & 1.03 & 0.20 \\
 \end{table}
 \end{center}
 
-As shown in Table \ref{results_table}, the estimated values for $\beta$ and $\sigma_{\epsilon}$ are significantly improved by taking into account the stochastic time delay noise. The estimated $\beta$ using OLS regression is $0.5$, compared to the true value $2$. Even a small amount of noise in the time axis causes attenuation, 
-limiting the usefulness of OLS for these problems.
-In comparison, the TVS Regression algorithm estimates $\beta$ to be $2.09$, much closer to the true value.
+As shown in Table \ref{results_table}, the estimated values for $\beta$ and $\sigma_{\varepsilon}$ are significantly improved by taking into account the stochastic time delay noise. The estimated $\beta$ using OLS regression is $0.5$, compared to the true value $2$. Even a small amount of noise in the time axis causes attenuation limiting the usefulness of OLS for these problems. In comparison, the TVS Regression algorithm estimates $\beta$ to be $2.09$, much closer to the true value.\\
 
 While the example is based on simulated data, we believe that the experiment demonstrates clear potential for improvement in the modelling of real world systems with stochastic time delay noise.
 
 
-\section{Future Work}
-
-In the univariate case, the utility of the described method is limited. However, we propose three extensions as future work. The first is to extend the method to multiple regression. We believe that the extension can be built on the same fundamental ideas presented in this document. Next, the model could be extended to include distributed lag structures. A distributed lag structure is where past values of the impulse influence future values of the output \cite{almon}. Finally, in relating $x(t)$ to $f(x(t))$, the function $f$ could be extended to the modelling of non-linear forms. 
-
-Through these extensions we can begin to tackle a number of practical problems that are defined by stochastic relationships between the input and output e.g. the blood glucose problem described in the introduction. In addition, by incorporating these elements we could begin to explore alternative forms of time series prediction. Essentially, existing prediction mechanisms predict the average across time shifts. However, in some situations the predictions could be considered nonsensical. For example, let us consider a regression model to predict how much coffee someone drinks between 9am and 9:30am, at work. They set off every day in their car at exactly 8:30am and it takes about 30 minutes ($\pm \tau$) to get to work. The time shift $\tau$ could be caused by something as simple as variations in traffic. When they get to work, they always have a coffee. A typical regression might predict $0.5$ coffees between 8:30 am and 9am and $0.5$ coffees between 9am and 9:30am. Alternative prediction forms such as: 'When they get to work, they will have 1 coffee' might be more useful.
-
 \section{Conclusion}
 
-We have proposed a form of regression analysis suited to the modelling of stochastic time delay problems. In addition, we have shown the feasibility of the approach and its performance on simulated data. Our approach allows for consistently improved estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.
+We have proposed a form of regression analysis suited to the modelling of stochastic time delay problems. In addition, we have shown the feasibility of the approach and its performance on simulated data. Our approach allows for consistently improved estimation and prediction when the input is affected by noise in the time domain. To our knowledge, the method is novel for this class of problem.\\
+
+We propose two extensions as future work. The first is to extend the method to multiple regression. We believe that the extension can be built on the same fundamental ideas presented in this document. Next, the model could be extended to include distributed lag structures. A distributed lag structure is where past values of the impulse influence future values of the output \cite{almon}. Through these extensions we can begin to tackle a number of practical problems that are defined by stochastic relationships between the input and output e.g. the blood glucose problem described in the introduction. In addition, we could also begin to apply the model to forecasting problems where the inputs are affected by stochastic time delay.
+
 
 % References
 \bibliographystyle{acm}
