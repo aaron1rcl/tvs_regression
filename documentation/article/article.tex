@@ -222,12 +222,12 @@ For the outer parameter optimisation (Step (3)), typical methods such as gradien
 \begin{remark}
 We also note that the accuracy of the final parameter estimate is relative to the ratio of the $y$-axis error and the effect size $f(x(t))$. 
 As the ratio of noise $\sigma_{\varepsilon}$ to effect $f(x(t))$ increases, the time shift distribution $\mathcal{T}$ shrinks. 
-In the event that $\lambda_{\tau}$ (CHANGE to $\theta_{f}$) becomes 0, the model becomes a ‘fixed lag’ model, and the parameter estimate $\beta$ tends to the standard linear regression coefficient. Therefore, the method provides no guarantee on recovering the exact time shifts, only that the coefficient estimates are equal to or better than their OLS counterparts.
+In the event that the mean of $\theta_{\mathcal{T}}$ become 0, the model becomes a ‘fixed lag’ model, and the parameter estimate $\beta$ tends to the standard linear regression coefficient. Therefore, the method provides no guarantee on recovering the exact time shifts, only that the coefficient estimates are equal to or better than their OLS counterparts.
 \end{remark}
 
 \section{Limitations}
 \subsection{Scaling}
-As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, for the $i_{th}$ and $j_{th}$ impulse (row) in $X(t)$ are far away then effect vectors are orthogonal. Hence, we wan decompose wth matrix $X(t)$ in orthogonal blocks on which the algorithm can then be run separately.
+As the length of $x(t)$ increases, more impulses are introduced and the size of the decomposed matrix $X(t)$ also increases. At some point, handling $X(t)$ becomes impractical. To account for this, we assume that distant impulses do not affect each other. Concretely, if the $i_{th}$ and $j_{th}$ impulse (row) in $X(t)$ are far away then their effect vectors are orthogonal. Hence, we can decompose the matrix $X(t)$ into orthogonal blocks on which the inner optimisation can be run in parallel.
 
 \subsection{Constraints}
 Finally, a note on problem constraints. The likelihood estimates are dependent on the inner optimisation procedure. There is no guarantee that the global maximum will be found, particularly for sequences with a high density of impulses. 

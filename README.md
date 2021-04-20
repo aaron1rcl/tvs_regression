@@ -29,4 +29,4 @@ Through a simulated experiment of a univariate problem, we demonstrate results t
 <br>
 
 The full article can be found at:
-/documentation/article.pdf
+/documentation/article/article.pdf
