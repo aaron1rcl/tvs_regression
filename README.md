@@ -16,7 +16,7 @@ pip install -r requirements.txt
 
 ## Example
 An example of a univariate linear TVS regression can be found at:
-notebooks/1_univariate_example.ipynb
+/notebooks/1_univariate_example.ipynb
 
 ## TVS Regression Article
 ---
@@ -29,4 +29,4 @@ Through a simulated experiment of a univariate problem, we demonstrate results t
 <br>
 
 The full article can be found at:
-documentation/article.pdf
+/documentation/article.pdf
