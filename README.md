@@ -23,7 +23,7 @@ notebooks/1_univariate_example.ipynb
 <h3><b>Abstract</b></h3>
 Systems with stochastic time delay between the input and output present a number of unique challenges. 
 Time domain noise leads to irregular alignments, obfuscates relationships and attenuates inferred coefficients. 
-To handle these challenges, we introduce a maximum likelihood regression model that regards stochastic time delay as an 'error' in the time domain. For a certain subset of problems, by modelling both prediction \emph{and} time errors it is possible to outperform traditional models.
+To handle these challenges, we introduce a maximum likelihood regression model that regards stochastic time delay as an 'error' in the time domain. For a certain subset of problems, by modelling both prediction and time errors it is possible to outperform traditional models.
 Through a simulated experiment of a univariate problem, we demonstrate results that significantly improve upon Ordinary Least Squares (OLS) regression.
 <br>
 <br>
