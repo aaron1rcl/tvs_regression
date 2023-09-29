@@ -205,8 +205,7 @@ class linearTVSRModel:
             self.summary = o.minimize(self.inner_objective, 
                                       [0, 1, 1, 0],
                                       method='L-BFGS-B',
-                                      bounds=bounds,
-                                      options ={"eps":0.2})
+                                      bounds=bounds)
 
         elif method == "differential_evolution":
             self.summary = differential_evolution(self.inner_objective,

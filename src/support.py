@@ -128,6 +128,23 @@ def log_pmf_discrete(x, u, sd, family="gaussian"):
     return np.sum(l)
 
 
+def log_pmf_randomwalk(x, u, sd, family="gaussian"):
+    ''' Calculate the discrete PMF log likelihood for a given random walk
+        What is the likelihood that a time series will be at point x, after given time t
+        Inputs:
+            x: individual observations
+            u: ** currently set to zero - need to generalise **
+            sd: standard deviation for gaussian, mu for poisson
+            family: gaussian (TO_DO: poisson and other distributions)
+    '''
+    x = np.array(x)
+    # Centre the variable first by subtracting the mean (to make it mean zero)
+    sds = np.arange(1, len(x))*np.sqrt(sd)
+    # Get the log likelihood
+    l = np.log(discrete_gaussian_kernel(x, sds))
+    return np.sum(l)
+
+
     
 
 # --- Segmentation Functions ------
